@@ -1,22 +1,29 @@
-var Mongo = require('mongodb');
-var Db = Mongo.Db
-var Server = Mongo.Server
+const crypto = require('crypto'),
+      fs = require('fs'),
+      express = require('express'),
+      lunchdb = require('./lunchdb');
 
-var host = "";
-var port = 0;
-var dbname = "lunch";
-var user = "";
-var pass = "";
+var key = fs.readFileSync('lunch.key').toString();
+var cert = fs.readFileSync('lunch.crt').toString();
 
-var db = new Db(dbname, new Server(host, port, {}));
+var credentials = crypto.createCredentials({key: key, cert: cert});
 
-db.open(function(err, db) {
-    db.authenticate(user, pass, function(err, auth) {
-        db.collection('users', function(err, collection) {
-            collection.count(function(err, count) {
-                console.log("There are " + count + " users.");
-                db.close();
-            });
-        });
+
+var app = express.createServer();
+app.setSecure(credentials);
+
+app.get('/', function(req, res) {
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end('{status: ok}');
+});
+
+app.get('/users/count.json', function(req, res) {
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    lunchdb.usersCount(function(err, count) {
+        res.end('{users: {count: ' + count + '}}');
     });
+});
+
+lunchdb.connect(function(err) {
+    app.listen(8000);
 });
