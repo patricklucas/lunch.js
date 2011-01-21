@@ -14,7 +14,8 @@ var db = new Db(dbname, new Server(host, port, {}));
 
 var errors = {
     not_connected: 'Database not connected. Call connect()',
-    already_nominated: 'That place was already nominated.'
+    already_nominated: 'That place was already nominated.',
+    too_many_nominations: 'You can only nominate 2 restaurants.'
 };
 
 var connected = function() {
@@ -98,19 +99,26 @@ lunchdb.nominate = function(nomination, callback) {
     }
 
     db.collection('nominations', function(err, collection) {
-        collection.find({ where: nomination }, function(err, cursor) {
-            cursor.nextObject(function(err, doc) {
-                if (doc != null) {
-                    callback(errors.already_nominated);
-                } else {
-                    collection.insert({
-                        user: 'plucas',
-                        votes: [],
-                        where: nomination
-                    }, function(docs) {
-                        callback(null);
-                    });
-                }
+        collection.count({ user: 'plucas' }, function(err, count) {
+            if (count >= 2) {
+                callback(errors.too_many_nominations);
+                return;
+            }
+
+            collection.find({ where: nomination }, function(err, cursor) {
+                cursor.nextObject(function(err, doc) {
+                    if (doc != null) {
+                        callback(errors.already_nominated);
+                    } else {
+                        collection.insert({
+                            user: 'plucas',
+                            votes: [],
+                            where: nomination
+                        }, function(docs) {
+                            callback(null);
+                        });
+                    }
+                });
             });
         });
     });
