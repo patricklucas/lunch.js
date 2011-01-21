@@ -1,0 +1,10 @@
+<% if (users.length) { %>
+  <h3>Lunch users:</h3>
+  <ul>
+    <% users.forEach(function(user) { %>
+      <li><%= user %></li>
+    <% }) %>
+  </ul>
+<% } else { %>
+  <h3>No Lunch users</h3>
+<% } %>

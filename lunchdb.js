@@ -40,6 +40,28 @@ lunchdb.connect = function(callback) {
     });
 };
 
+lunchdb.userNames = function(callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+
+    db.collection('users', function(err, collection) {
+        collection.find(function(err, cursor) {
+            var users = new Array();
+
+            cursor.each(function(err, user) {
+                if (user == null) {
+                    callback(null, users);
+                    return;
+                }
+
+                users.push(user.name);
+            });
+        });
+    });
+};
+
 lunchdb.usersCount = function(callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
