@@ -13,7 +13,8 @@ var lunchdb = exports;
 var db = new Db(dbname, new Server(host, port, {}));
 
 var errors = {
-    not_connected: 'Database not connected. Call connect()'
+    not_connected: 'Database not connected. Call connect()',
+    already_nominated: 'That place was already nominated.'
 };
 
 var connected = function() {
@@ -92,9 +93,25 @@ lunchdb.nominations = function(callback) {
 
 lunchdb.nominate = function(nomination, callback) {
     if (!connected()) {
-        callback(errors.not_connected, null);
+        callback(errors.not_connected);
         return;
     }
 
-    callback(null);
+    db.collection('nominations', function(err, collection) {
+        collection.find({ where: nomination }, function(err, cursor) {
+            cursor.nextObject(function(err, doc) {
+                if (doc != null) {
+                    callback(errors.already_nominated);
+                } else {
+                    collection.insert({
+                        user: 'plucas',
+                        votes: [],
+                        where: nomination
+                    }, function(docs) {
+                        callback(null);
+                    });
+                }
+            });
+        });
+    });
 };
