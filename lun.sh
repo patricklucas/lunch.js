@@ -5,7 +5,8 @@ HOST="https://localhost:8000"
 if [ $# = 0 ]
 then
     curl -k $HOST/nominations.txt
-elif [ $1 = "-a" -a -n $2 ]
+elif [ $1 = "-a" -a -n "$2" ]
 then
-    curl -k $HOST/nominate.txt -d nomination="$2"
+    shift
+    curl -k $HOST/nominate.txt -d nomination="$*"
 fi
