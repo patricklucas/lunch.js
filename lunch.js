@@ -42,7 +42,7 @@ app.get('/', function(req, res) {
 app.get('/nominations.:format?', function(req, res) {
     lunchdb.nominations(function(err, nominations) {
         if (isJson(req))
-            sendJson(nominations);
+            sendJson(nominations, res);
         else {
             var format = isTxt(req) ? 'txt' : 'html';
             res.render(format + '/nominations.ejs', {
@@ -61,7 +61,7 @@ app.post('/nominate.:format?', function(req, res) {
         var out = errOrOk(err);
 
         if (isJson(req))
-            sendJson(out);
+            sendJson(out, res);
         else if (isTxt(req)) {
             if (out.status == 'ok')
                 sendTxt('Nomination for \'' + nomination + '\' successful.', res);
