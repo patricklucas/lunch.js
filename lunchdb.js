@@ -12,9 +12,15 @@ var lunchdb = exports;
 
 var db = new Db(dbname, new Server(host, port, {}));
 
-lunchdb.connected = function() {
+var errors = {
+    not_connected: 'Database not connected. Call connect().'
+};
+
+var connected = function() {
     return db && db.state == 'connected';
-}
+};
+
+lunchdb.connected = connected;
 
 lunchdb.connect = function(callback) {
     db.open(function(err, db) {
@@ -35,12 +41,12 @@ lunchdb.connect = function(callback) {
 };
 
 lunchdb.usersCount = function(callback) {
-    if (!lunchdb.connected()) {
-        callback('Database not connected. Call connect()', null);
+    if (!connected()) {
+        callback(errors.not_connected, null);
         return;
     }
 
-   db.collection('users', function(err, collection) {
+    db.collection('users', function(err, collection) {
         collection.count(function(err, count) {
             callback(null, count);
         });
