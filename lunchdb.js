@@ -75,6 +75,21 @@ lunchdb.usersCount = function(callback) {
     }); 
 };
 
+lunchdb.nominations = function(callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+
+    db.collection('nominations', function(err, collection) {
+        collection.find(function(err, cursor) {
+            cursor.toArray(function(err, nominations) {
+                callback(null, nominations);
+            });
+        });
+    });
+};
+
 lunchdb.nominate = function(nomination, callback) {
     if (!connected()) {
         callback(errors.not_connected, null);

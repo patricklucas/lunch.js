@@ -1,0 +1,16 @@
+<% if (nominations.length) { %>
+  <h3>Lunch nominations:</h3>
+  <ol>
+    <% nominations.forEach(function(nomination) { %>
+      <li><%= nomination.where %> (<%= nomination.user %>)
+        <ul>
+          <% nomination.votes.forEach(function(user) { %>
+            <li><%= user %></li>
+          <% }) %>
+        </ul>
+      </li>
+    <% }) %>
+  </ol>
+<% } else { %>
+  <h3>No Lunch nominations</h3>
+<% } %>

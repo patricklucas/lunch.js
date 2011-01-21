@@ -39,6 +39,21 @@ app.get('/', function(req, res) {
     res.end('{status: ok}');
 });
 
+app.get('/nominations.:format?', function(req, res) {
+    lunchdb.nominations(function(err, nominations) {
+        if (isJson(req))
+            sendJson(nominations);
+        else {
+            var format = isTxt(req) ? 'txt' : 'html';
+            res.render(format + '/nominations.ejs', {
+                locals: { nominations: nominations }
+            });
+        }
+
+        res.end();
+    });
+});
+
 app.post('/nominate.:format?', function(req, res) {
     lunchdb.nominate(req.body['nomination'], function(err) {
         var out = errOrOk(err);
