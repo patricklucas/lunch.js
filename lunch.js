@@ -31,7 +31,7 @@ var sendJson = function(json, res) {
 
 var sendTxt = function(txt, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.write(txt);
+    res.write(txt + '\n');
 }
 
 app.get('/', function(req, res) {
@@ -55,14 +55,16 @@ app.get('/nominations.:format?', function(req, res) {
 });
 
 app.post('/nominate.:format?', function(req, res) {
-    lunchdb.nominate(req.body['nomination'], function(err) {
+    var nomination = req.body['nomination'];
+
+    lunchdb.nominate(nomination, function(err) {
         var out = errOrOk(err);
 
         if (isJson(req))
             sendJson(out);
         else if (isTxt(req)) {
             if (out.status == 'ok')
-                sendTxt('Nomination successful', res);
+                sendTxt('Nomination for ' + nomination + ' successful.', res);
             else
                 sendTxt(out.error, res);
         } else
