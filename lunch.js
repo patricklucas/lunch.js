@@ -64,7 +64,7 @@ app.post('/nominate.:format?', function(req, res) {
             sendJson(out);
         else if (isTxt(req)) {
             if (out.status == 'ok')
-                sendTxt('Nomination for ' + nomination + ' successful.', res);
+                sendTxt('Nomination for \'' + nomination + '\' successful.', res);
             else
                 sendTxt(out.error, res);
         } else
