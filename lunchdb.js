@@ -13,7 +13,7 @@ var lunchdb = exports;
 var db = new Db(dbname, new Server(host, port, {}));
 
 var errors = {
-    not_connected: 'Database not connected. Call connect().'
+    not_connected: 'Database not connected. Call connect()'
 };
 
 var connected = function() {
@@ -73,4 +73,13 @@ lunchdb.usersCount = function(callback) {
             callback(null, count);
         });
     }); 
+};
+
+lunchdb.nominate = function(nomination, callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+
+    callback(null);
 };

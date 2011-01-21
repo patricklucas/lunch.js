@@ -10,15 +10,28 @@ var credentials = crypto.createCredentials({key: key, cert: cert});
 
 var app = express.createServer();
 
+app.use(express.bodyDecoder());
+
 app.setSecure(credentials);
 
 app.set('view options', {
     layout: false
 });
 
+var isJson = function(req) { return req.params.format == 'json'; };
+var isTxt = function(req) { return req.params.format == 'txt'; };
+var errOrOk = function(err) {
+    return (!!err) ? { status: 'error', error: err } : { status: 'ok' };
+}
+
 var sendJson = function(json, res) {
     res.writeHead(200, {'Content-Type': 'application/json'});
     res.write(JSON.stringify(json));
+}
+
+var sendTxt = function(txt, res) {
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.write(txt);
 }
 
 app.get('/', function(req, res) {
@@ -26,11 +39,29 @@ app.get('/', function(req, res) {
     res.end('{status: ok}');
 });
 
+app.post('/nominate.:format?', function(req, res) {
+    lunchdb.nominate(req.body['nomination'], function(err) {
+        var out = errOrOk(err);
+
+        if (isJson(req))
+            sendJson(out);
+        else if (isTxt(req)) {
+            if (out.status == 'ok')
+                sendTxt('Nomination successful', res);
+            else
+                sendTxt(out.error, res);
+        } else
+            res.redirect('/');
+
+        res.end();
+    });
+});
+
 app.get('/users.:format?', function(req, res) {
     lunchdb.userNames(function(err, users) {
-        if (req.params.format == 'json') {
+        if (isJson(req)) {
             sendJson({ users: users }, res);
-        } else if (req.params.format == 'txt') {
+        } else if (isTxt(req)) {
             res.render('txt/users.ejs', {
                 locals: { users: users }
             });
