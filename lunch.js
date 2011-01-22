@@ -24,22 +24,28 @@ var errOrOk = function(err) {
     return (!!err) ? { status: 'error', error: err } : { status: 'ok' };
 }
 
-var sendJson = function(json, res) {
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.write(JSON.stringify(json));
+mimetypes = {
+    json: 'application/json',
+    html: 'text/html',
+    text: 'text/plain'
+};
+
+var writeHeadOk = function(res, mimetype) {
+    mimetype = mimetype || 'html';
+    res.writeHead(200, {'Content-Type': mimetypes[mimetype]});
 }
+
+var sendJson = function(json, res) {
+    writeHeadOk(res, 'json');
+    res.write(JSON.stringify(json));
+};
 
 var sendTxt = function(txt, res) {
-    res.writeHead(200, {'Content-Type': 'text/plain'});
+    writeHeadOk(res, 'text');
     res.write(txt + '\n');
-}
+};
 
-app.get('/', function(req, res) {
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.end('{status: ok}');
-});
-
-app.get('/nominations.:format?', function(req, res) {
+var nominations = function(req, res) {
     lunchdb.nominations(function(err, nominations) {
         if (isJson(req))
             sendJson(nominations, res);
@@ -52,9 +58,9 @@ app.get('/nominations.:format?', function(req, res) {
 
         res.end();
     });
-});
+}
 
-app.post('/nominate.:format?', function(req, res) {
+var nominate = function(req, res) {
     var nomination = req.body['nomination'];
 
     lunchdb.nominate(nomination, function(err) {
@@ -72,42 +78,43 @@ app.post('/nominate.:format?', function(req, res) {
 
         res.end();
     });
-});
+}
 
-app.get('/users.:format?', function(req, res) {
+var users = function(req, res) {
     lunchdb.userNames(function(err, users) {
         if (isJson(req)) {
             sendJson({ users: users }, res);
-        } else if (isTxt(req)) {
-            res.render('txt/users.ejs', {
-                locals: { users: users }
-            });
         } else {
-            res.render('html/users.ejs', {
-                locals: { users: users}
+            var format = isTxt(req) ? 'txt' : 'html';
+            res.render(format + '/users.ejs', {
+                locals: { users: users }
             });
         }
 
         res.end();
     });
-});
+}
 
-app.get('/users/count.:format?', function(req, res) {
+var usersCount = function(req, res) {
     lunchdb.usersCount(function(err, count) {
-        if (req.params.format == 'txt') {
-            res.writeHead(200, {'Content-Type': 'text/plain'});
-            res.write('Number of users: ' + count);
-        } else if (req.params.format == 'json') {
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.write('{users: {count: ' + count + '}}');
+        if (isJson(req)) {
+            sendJson({ usersCount: count }, res);
+        } else if (isTxt(req)) {
+            sendTxt('Number of users: ' + count, res);
         } else {
-            res.writeHead(200, {'Content-Type': 'text/html'});
+            writeHeadOk(res);
             res.write('Number of users: <strong>' + count + '</strong>');
         }
 
         res.end();
     });
-});
+}
+
+app.get('/', nominations)
+app.get('/nominations.:format?', nominations)
+app.post('/nominate.:format?', nominate)
+app.get('/users.:format?', users)
+app.get('/users/count.:format?', usersCount);
 
 lunchdb.connect(function(err) {
     app.listen(8000);
