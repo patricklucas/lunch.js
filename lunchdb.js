@@ -123,3 +123,22 @@ lunchdb.nominate = function(nomination, callback) {
         });
     });
 };
+
+lunchdb.reset = function(callback) {
+    if (!connected()) {
+        callback(errors.not_connected);
+        return;
+    }
+
+    db.collection('nominations', function(err, collection) {
+        if (!err) {
+            collection.remove(function(err, collection) {
+                if (!err)
+                    callback(null);
+                else
+                    callback(err);
+            });
+        } else
+            callback(err);
+    });
+}

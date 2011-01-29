@@ -110,11 +110,30 @@ var usersCount = function(req, res) {
     });
 }
 
+var reset = function(req, res) {
+    lunchdb.reset(function(err) {
+        var out = errOrOk(err);
+
+        if (isJson(req))
+            sendJson(out, res);
+        else if (isTxt(req)) {
+            if (out.status == 'ok')
+                sendTxt('Database reset.', res);
+            else
+                sendTxt(out.error, res);
+        } else
+            res.redirect('/');
+
+        res.end();
+    });
+}
+
 app.get('/', nominations)
 app.get('/nominations.:format?', nominations)
 app.post('/nominate.:format?', nominate)
 app.get('/users.:format?', users)
 app.get('/users/count.:format?', usersCount);
+app.post('/reset.:format?', reset);
 
 lunchdb.connect(function(err) {
     app.listen(8000);

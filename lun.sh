@@ -10,5 +10,8 @@ then
 elif [ $1 = "-a" -a -n "$2" ]
 then
     shift
-    $CURL -k $HOST/nominate.txt -d nomination="$*"
+    $CURL $HOST/nominate.txt -d nomination="$*"
+elif [ $1 = "--reset" ]
+then
+    $CURL -X POST $HOST/reset.txt
 fi
