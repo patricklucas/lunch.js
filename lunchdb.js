@@ -15,7 +15,10 @@ var db = new Db(dbname, new Server(host, port, {}));
 var errors = {
     not_connected: 'Database not connected. Call connect()',
     already_nominated: 'That place was already nominated.',
-    too_many_nominations: 'You can only nominate 2 restaurants.'
+    too_many_nominations: 'You can only nominate 2 restaurants.',
+    unknown_user: 'Unknown user.',
+    nan: 'Not a number.',
+    negative: 'Must be non-negative.'
 };
 
 var connected = function() {
@@ -142,3 +145,37 @@ lunchdb.reset = function(callback) {
             callback(err);
     });
 }
+
+lunchdb.drive = function(seatsStr, callback) {
+    if (!connected()) {
+        callback(errors.not_connected);
+        return;
+    }
+
+    var seats = +seatsStr;
+
+    if (isNaN(seats)) {
+        callback(errors.nan);
+        return;
+    }
+
+    if (seats < 0) {
+        callback(errors.negative);
+        return;
+    }
+
+    db.collection('users', function(err, collection) {
+        collection.find({ name: 'plucas' }, function(err, cursor) {
+            cursor.nextObject(function(err, doc) {
+                if (doc == null)
+                    callback(errors.unknown_user);
+                else {
+                    doc.seats = seats;
+                    collection.save(doc, function(err) {
+                        callback(null);
+                    });
+                }
+            });
+        });
+    });
+};

@@ -128,12 +128,33 @@ var reset = function(req, res) {
     });
 }
 
+var drive = function(req, res) {
+    var seats = req.body['seats'];
+
+    lunchdb.drive(seats, function(err) {
+        var out = errOrOk(err);
+
+        if (isJson(req))
+            sendJson(out, res);
+        else if (isTxt(req)) {
+            if (out.status == 'ok')
+                sendTxt('You have ' + seats + ' seats available.', res);
+            else
+                sendTxt(out.error, res);
+        } else
+            res.redirect('/');
+
+        res.end();
+    });
+}
+
 app.get('/', nominations)
 app.get('/nominations.:format?', nominations)
 app.post('/nominate.:format?', nominate)
 app.get('/users.:format?', users)
 app.get('/users/count.:format?', usersCount);
 app.post('/reset.:format?', reset);
+app.post('/drive.:format?', drive);
 
 lunchdb.connect(function(err) {
     app.listen(8000);
