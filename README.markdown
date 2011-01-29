@@ -17,9 +17,10 @@ Actions
    * GET /users
  * Nominate a restaurant
    * POST /nominate ?nomination (the restaurant to nominate)
-   * `lun.sh -a Some Restaurant`
+   * `lun.sh -a <restaurant>`
  * Mark yourself as a driver
    * POST /drive ?seats (number of available seats for passengers)
+   * `lun.sh -d <seats>`
  * Reset the list of nominations
    * POST /reset
    * `lun.sh --reset`
