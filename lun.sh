@@ -17,4 +17,7 @@ then
 elif [ $1 = "--reset" ]
 then
     $CURL -X POST $HOST/reset.txt
+elif [ -n "$1" ]
+then
+    $CURL $HOST/vote.txt -d restaurant="$*"
 fi

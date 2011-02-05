@@ -16,6 +16,7 @@ var errors = {
     not_connected: 'Database not connected. Call connect()',
     already_nominated: 'That place was already nominated.',
     too_many_nominations: 'You can only nominate 2 restaurants.',
+    unknown_nomination: 'That restaurant hasn\'t been nominated.',
     unknown_user: 'Unknown user.',
     nan: 'Not a number.',
     negative: 'Must be non-negative.'
@@ -173,6 +174,40 @@ lunchdb.drive = function(seatsStr, callback) {
                     doc.seats = seats;
                     collection.save(doc, function(err) {
                         callback(null);
+                    });
+                }
+            });
+        });
+    });
+};
+
+lunchdb.vote = function(restaurant, callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+
+    db.collection('nominations', function(err, collection) {
+        collection.find({ where: restaurant }, function(err, cursor) {
+            cursor.nextObject(function(err, nomination) {
+                if (nomination == null)
+                    callback(errors.unknown_nomination, null);
+                else {
+                    db.collection('users', function(err, collection) {
+                        collection.find({ name: 'plucas' }, function(err, cursor) {
+                            cursor.nextObject(function(err, user) {
+                                if (user == null)
+                                    callback(errors.unknown_user, null);
+                                else {
+                                    var oldvote = user.vote;
+                                    user.vote = restaurant;
+                                    
+                                    collection.save(user, function(err) {
+                                        callback(null, oldvote);
+                                    });
+                                }
+                            });
+                        });
                     });
                 }
             });

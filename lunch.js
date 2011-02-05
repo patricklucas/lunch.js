@@ -148,6 +148,31 @@ var drive = function(req, res) {
     });
 }
 
+var vote = function(req, res) {
+    var restaurant = req.body['restaurant'];
+
+    lunchdb.vote(restaurant, function(err, prevVote) {
+        var out = errOrOk(err);
+
+        if (isJson(req))
+            sendJson(out, res);
+        else if (isTxt(req)) {
+            if (out.status == 'ok') {
+                if (!prevVote)
+                    sendTxt('Vote for \'' + restaurant + '\' successful.', res);
+                else if (prevVote == restaurant)
+                    sendTxt('Vote for \'' + restaurant + '\' unchanged.', res);
+                else
+                    sendTxt('Vote changed from \'' + prevVote + '\' to \'' + restaurant + '\'', res);
+            } else
+                sendTxt(out.error, res);
+        } else
+            res.redirect('/');
+
+        res.end();
+    });
+}
+
 app.get('/', nominations)
 app.get('/nominations.:format?', nominations)
 app.post('/nominate.:format?', nominate)
@@ -155,6 +180,7 @@ app.get('/users.:format?', users)
 app.get('/users/count.:format?', usersCount);
 app.post('/reset.:format?', reset);
 app.post('/drive.:format?', drive);
+app.post('/vote.:format?', vote);
 
 lunchdb.connect(function(err) {
     app.listen(8000);
