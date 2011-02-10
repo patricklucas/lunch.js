@@ -1,4 +1,4 @@
-<% if (nominations.length) { var i = 1; %>Lunch nominations:
-<% nominations.forEach(function(nomination) { %>  <%= i++ %>  <%= nomination.where %> (<%= nomination.user %>)
-<% nomination.votes.forEach(function(user) { %>      - <%= user %>
+<% if (nominations.length) { %>Lunch nominations:
+<% nominations.forEach(function(nomination) { %>  + <%= nomination.where %> (<%= nomination.user %>)
+<% nomination.votes.forEach(function(user) { %>    - <%= user %>
 <% })}) %><% } else { %>No Lunch nominations<% } %>

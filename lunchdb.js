@@ -81,16 +81,75 @@ lunchdb.usersCount = function(callback) {
     }); 
 };
 
+var collectVotes = function(callback) {
+    db.collection('users', function(err, collection) {
+        collection.mapReduce(function() {
+            emit(this.vote, {users: [this.name]});
+        }, function(key, values) {
+            var users = [];
+            
+            values.forEach(function(doc) {
+                users = users.concat(doc.users);
+            });
+            
+            return {users: users};
+        }, function(err, mrCollection) {
+            mrCollection.find(function(err, cursor) {
+                cursor.toArray(function(err, arr) {
+                    var votes = {};
+                    
+                    arr.forEach(function(mrResult) {
+                        votes[mrResult._id] = mrResult.value.users;
+                    });
+                    
+                    callback(null, votes);
+                });
+            });
+        });
+    });
+}
+
 lunchdb.nominations = function(callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
         return;
     }
 
-    db.collection('nominations', function(err, collection) {
-        collection.find(function(err, cursor) {
-            cursor.toArray(function(err, nominations) {
-                callback(null, nominations);
+    collectVotes(function(err, votes) {
+        var nominations = {};
+        
+        for (var where in votes) {
+            nominations[where] = {
+                votes: votes[where]
+            };
+        }
+        
+        db.collection('nominations', function(err, collection) {
+            collection.find(function(err, cursor) {
+                cursor.each(function(err, nomination) {
+                    if (nomination) {
+                        var where = nomination.where;
+                        var user = nomination.user;
+                        
+                        nominations[where] = nominations[where] || {
+                            votes: []
+                        };
+                        
+                        nominations[where].user = user;
+                    } else {
+                        var nominationsArr = [];
+                        
+                        for (var n in nominations) {
+                            nominationsArr.push({
+                                where: n,
+                                user: nominations[n].user,
+                                votes: nominations[n].votes
+                            });
+                        }
+                        console.log(nominationsArr);
+                        callback(null, nominationsArr);
+                    }
+                });
             });
         });
     });
