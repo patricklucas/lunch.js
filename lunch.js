@@ -151,19 +151,19 @@ var drive = function(req, res) {
 var vote = function(req, res) {
     var restaurant = req.body['restaurant'];
 
-    lunchdb.vote(restaurant, function(err, prevVote) {
+    lunchdb.vote(restaurant, function(err, change) {
         var out = errOrOk(err);
 
         if (isJson(req))
             sendJson(out, res);
         else if (isTxt(req)) {
             if (out.status == 'ok') {
-                if (!prevVote)
-                    sendTxt('Vote for \'' + restaurant + '\' successful.', res);
-                else if (prevVote == restaurant)
-                    sendTxt('Vote for \'' + restaurant + '\' unchanged.', res);
+                if (!change.old)
+                    sendTxt('Vote for \'' + change.new + '\' successful.', res);
+                else if (change.old == change.new)
+                    sendTxt('Vote for \'' + change.new + '\' unchanged.', res);
                 else
-                    sendTxt('Vote changed from \'' + prevVote + '\' to \'' + restaurant + '\'', res);
+                    sendTxt('Vote changed from \'' + change.old + '\' to \'' + change.new + '\'', res);
             } else
                 sendTxt(out.error, res);
         } else

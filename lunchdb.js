@@ -247,7 +247,7 @@ lunchdb.vote = function(restaurant, callback) {
     }
 
     db.collection('nominations', function(err, collection) {
-        collection.find({ where: restaurant }, function(err, cursor) {
+        collection.find({ where: new RegExp("^" + restaurant, "i") }, function(err, cursor) {
             cursor.nextObject(function(err, nomination) {
                 if (nomination == null)
                     callback(errors.unknown_nomination, null);
@@ -258,11 +258,13 @@ lunchdb.vote = function(restaurant, callback) {
                                 if (user == null)
                                     callback(errors.unknown_user, null);
                                 else {
-                                    var oldvote = user.vote;
-                                    user.vote = restaurant;
+                                    change = {
+                                        old: user.vote,
+                                        new: nomination.where
+                                    };
                                     
                                     collection.save(user, function(err) {
-                                        callback(null, oldvote);
+                                        callback(null, change);
                                     });
                                 }
                             });
