@@ -146,7 +146,7 @@ lunchdb.nominations = function(callback) {
                                 votes: nominations[n].votes
                             });
                         }
-                        console.log(nominationsArr);
+
                         callback(null, nominationsArr);
                     }
                 });
