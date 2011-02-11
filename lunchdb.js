@@ -269,43 +269,6 @@ RegExp.quote = function(str) {
     return str.replace(/([.?*+^$[\]\\(){}-])/g, "\\$1");
 };
 
-lunchdb.vote = function(restaurant, callback) {
-    if (!connected()) {
-        callback(errors.not_connected, null);
-        return;
-    }
-
-    db.collection('nominations', function(err, collection) {
-        var re 
-        collection.find({ where: new RegExp('^' + RegExp.quote(restaurant), "i") }, function(err, cursor) {
-            cursor.nextObject(function(err, nomination) {
-                if (nomination == null)
-                    callback(errors.unknown_nomination, null);
-                else {
-                    db.collection('users', function(err, collection) {
-                        collection.find({ name: 'plucas' }, function(err, cursor) {
-                            cursor.nextObject(function(err, user) {
-                                if (user == null)
-                                    callback(errors.unknown_user, null);
-                                else {
-                                    var oldVote = user.vote;
-                                    var newVote = nomination.where;
-                                    
-                                    user.vote = newVote;
-                                    
-                                    collection.save(user, function(err) {
-                                        callback(null, {old: oldVote, new: newVote});
-                                    });
-                                }
-                            });
-                        });
-                    });
-                }
-            });
-        });
-    });
-};
-
 var setUserVote = function(name, vote, callback) {
     db.collection('users', function(err, collection) {
         collection.findOne({ name: name }, function(err, user) {
@@ -323,6 +286,35 @@ var setUserVote = function(name, vote, callback) {
         });
     });
 }
+
+lunchdb.vote = function(restaurant, callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+
+    db.collection('nominations', function(err, collection) {
+        var search = { where: new RegExp('^' + RegExp.quote(restaurant), 'i') };
+
+        collection.find(search, function(err, cursor) {
+            cursor.nextObject(function(err, nomination) {
+                if (nomination == null)
+                    callback(errors.unknown_nomination, null);
+                else {
+                    var vote = nomination.where;
+
+                    setUserVote('plucas', vote, function(err, oldVote) {
+                        if (err) {
+                            callback(err, null);
+                        } else {
+                            callback(null, {old: oldVote, new: vote});
+                        }
+                    });
+                }
+            });
+        });
+    });
+};
 
 lunchdb.unvote = function(callback) {
     if (!connected()) {
