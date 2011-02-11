@@ -188,12 +188,22 @@ lunchdb.nominate = function(nomination, callback) {
     });
 };
 
-lunchdb.reset = function(callback) {
-    if (!connected()) {
-        callback(errors.not_connected);
-        return;
-    }
+var clearUserVotes = function(callback) {
+    db.collection('users', function(err, collection) {
+        collection.find(function(err, cursor) {
+            cursor.each(function(err, user) {
+                if (user) {
+                    user.vote = null;
+                    collection.save(user, function() {});
+                } else {
+                    callback();
+                }
+            });
+        });
+    });
+}
 
+var clearNominations = function(callback) {
     db.collection('nominations', function(err, collection) {
         if (!err) {
             collection.remove(function(err, collection) {
@@ -204,6 +214,19 @@ lunchdb.reset = function(callback) {
             });
         } else
             callback(err);
+    });
+}
+
+lunchdb.reset = function(callback) {
+    if (!connected()) {
+        callback(errors.not_connected);
+        return;
+    }
+    
+    clearUserVotes(function() {
+        clearNominations(function() {
+            callback(null);
+        });
     });
 }
 
