@@ -282,13 +282,13 @@ lunchdb.vote = function(restaurant, callback) {
                                 if (user == null)
                                     callback(errors.unknown_user, null);
                                 else {
-                                    change = {
-                                        old: user.vote,
-                                        new: nomination.where
-                                    };
+                                    var oldVote = user.vote;
+                                    var newVote = nomination.where;
+                                    
+                                    user.vote = newVote;
                                     
                                     collection.save(user, function(err) {
-                                        callback(null, change);
+                                        callback(null, {old: oldVote, new: newVote});
                                     });
                                 }
                             });
