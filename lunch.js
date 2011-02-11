@@ -173,6 +173,27 @@ var vote = function(req, res) {
     });
 }
 
+var unvote = function(req, res) {
+    lunchdb.unvote(function(err, oldVote) {
+        var out = errOrOk(err);
+
+        if (isJson(req))
+            sendJson(out, res);
+        else if (isTxt(req)) {
+            if (out.status == 'ok') {
+                if (oldVote)
+                    sendTxt('No longer voting for \'' + oldVote + '\'.', res);
+                else
+                    sendTxt("You weren't voting for anything!", res);
+            } else
+                sendTxt(out.error, res);
+        } else
+            res.redirect('/');
+
+        res.end();
+    });
+}
+
 app.get('/', nominations)
 app.get('/nominations.:format?', nominations)
 app.post('/nominate.:format?', nominate)
@@ -181,6 +202,7 @@ app.get('/users/count.:format?', usersCount);
 app.post('/reset.:format?', reset);
 app.post('/drive.:format?', drive);
 app.post('/vote.:format?', vote);
+app.post('/unvote.:format?', unvote);
 
 lunchdb.connect(function(err) {
     app.listen(8000);

@@ -299,3 +299,32 @@ lunchdb.vote = function(restaurant, callback) {
         });
     });
 };
+
+var setUserVote = function(name, vote, callback) {
+    db.collection('users', function(err, collection) {
+        collection.findOne({ name: name }, function(err, user) {
+            if (user == null)
+                callback(errors.unknown_user, null);
+            else {
+                var oldVote = user.vote || null;
+                
+                user.vote = vote;
+                
+                collection.save(user, function(err) {
+                    callback(null, oldVote);
+                });
+            }
+        });
+    });
+}
+
+lunchdb.unvote = function(callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+    
+    setUserVote('plucas', null, function(err, oldVote) {
+        callback(null, oldVote);
+    });
+}
