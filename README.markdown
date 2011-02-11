@@ -3,9 +3,12 @@ lunch.js
 
 lunch.js is a Node.js application that provides a REST interface for deciding where to go to lunch. Included is a command-line client, `lun.sh`, which uses cURL.
 
-Current functionality is limited to listing users (of which none can be added), listing nominations, and nominating restaurants.
-
 All requests respond to .json, .txt, or the default, .html.
+
+To-do for alpha:
+ * User authentication
+ * Remove a nomination
+ * User comments
 
 Actions
 -------
