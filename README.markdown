@@ -5,11 +5,6 @@ lunch.js is a Node.js application that provides a REST interface for deciding wh
 
 All requests respond to .json, .txt, or the default, .html.
 
-To-do for alpha:
- * User authentication
- * Remove a nomination
- * User comments
-
 Actions
 -------
 
@@ -33,3 +28,10 @@ Actions
  * Reset the list of nominations
    * POST /reset
    * `lun.sh --reset`
+
+To-Do for Alpha
+---------------
+
+ * User authentication
+ * Remove a nomination
+ * User comments
