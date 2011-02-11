@@ -264,6 +264,11 @@ lunchdb.drive = function(seatsStr, callback) {
     });
 };
 
+/* Escape special characters for dynamic regex creation */
+RegExp.quote = function(str) {
+    return str.replace(/([.?*+^$[\]\\(){}-])/g, "\\$1");
+};
+
 lunchdb.vote = function(restaurant, callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
@@ -271,7 +276,8 @@ lunchdb.vote = function(restaurant, callback) {
     }
 
     db.collection('nominations', function(err, collection) {
-        collection.find({ where: new RegExp("^" + restaurant, "i") }, function(err, cursor) {
+        var re 
+        collection.find({ where: new RegExp('^' + RegExp.quote(restaurant), "i") }, function(err, cursor) {
             cursor.nextObject(function(err, nomination) {
                 if (nomination == null)
                     callback(errors.unknown_nomination, null);
