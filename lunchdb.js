@@ -84,7 +84,8 @@ lunchdb.usersCount = function(callback) {
 var collectVotes = function(callback) {
     db.collection('users', function(err, collection) {
         collection.mapReduce(function() {
-            emit(this.vote, {users: [this.name]});
+            if (this.vote)
+                emit(this.vote, {users: [this.name]});
         }, function(key, values) {
             var users = [];
             
