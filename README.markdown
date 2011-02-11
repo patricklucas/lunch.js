@@ -18,6 +18,12 @@ Actions
  * Nominate a restaurant
    * POST /nominate ?nomination (the restaurant to nominate)
    * `lun.sh -a <restaurant>`
+ * Vote for a restaurant
+   * POST /vote ?restaurant (the prefix of the restaurant, eg. 'chi' matches 'Chick-fil-A')
+   * `lun.sh <restaurant-prefix>`
+ * Remove your vote
+   * POST /unvote
+   * `lun.sh -u`
  * Mark yourself as a driver
    * POST /drive ?seats (number of available seats for passengers)
    * `lun.sh -d <seats>`
