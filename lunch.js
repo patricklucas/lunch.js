@@ -226,5 +226,9 @@ app.post('/vote.:format?', vote);
 app.post('/unvote.:format?', unvote);
 
 lunchdb.connect(function(err) {
-    app.listen(8000);
+    if (err) {
+        console.log(err);
+    } else {
+        app.listen(8000);
+    }
 });

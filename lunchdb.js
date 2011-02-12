@@ -33,17 +33,17 @@ lunchdb.connected = connected;
 lunchdb.connect = function(callback) {
     db.open(function(err, db) {
         if (err) {
-            callback(err, null);
+            callback(err);
             return;
         }
 
         db.authenticate(user, pass, function(err, auth) {
             if (err) {
-                callback(err, null);
+                callback(err);
                 return;
             }
 
-            callback(null, lunchdb);
+            callback(null);
         });
     });
 };
