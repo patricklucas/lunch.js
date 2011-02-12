@@ -26,6 +26,5 @@ then
     $CURL -X POST $HOST/unvote.txt
 elif [ -n "$1" ]
 then
-    shift
     $CURL $HOST/vote.txt -d restaurant="$*"
 fi
