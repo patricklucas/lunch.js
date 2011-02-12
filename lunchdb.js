@@ -19,7 +19,9 @@ var errors = {
     unknown_nomination: 'That restaurant hasn\'t been nominated.',
     unknown_user: 'Unknown user.',
     nan: 'Not a number.',
-    negative: 'Must be non-negative.'
+    negative: 'Must be non-negative.',
+    did_not_nominate: 'You didn\'t nominate that restaurant.',
+    nomination_has_votes: 'Can\'t remove a nomination with votes.'
 };
 
 var connected = function() {
@@ -110,6 +112,30 @@ var collectVotes = function(callback) {
     });
 }
 
+var collectVotesFor = function(nomination, callback) {
+    db.collection('users', function(err, collection) {
+        collection.find({ vote: nomination }, function(err, cursor) {
+            var votes = [];
+            
+            cursor.each(function(err, user) {
+                if (user) {
+                    votes.push(user.name);
+                } else {
+                    callback(null, votes);
+                }
+            });
+        });
+    });
+}
+
+var numVotesFor = function(nomination, callback) {
+    db.collection('users', function(err, collection) {
+        collection.count({ vote: nomination }, function(err, count) {
+            callback(err, count);
+        });
+    });
+}
+
 lunchdb.nominations = function(callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
@@ -188,6 +214,72 @@ lunchdb.nominate = function(nomination, callback) {
     });
 };
 
+var getUserNominations = function(user, callback) {
+    db.collection('nominations', function(err, collection) {
+        collection.find({ user: user }, function(err, cursor) {
+            var nominations = {};
+            
+            cursor.each(function(err, nomination) {
+                if (nomination) {
+                    nominations[nomination.where] = nomination.where;
+                } else {
+                    callback(null, nominations);
+                }
+            });
+        });
+    });
+}
+
+var getNomination = function(restaurant, callback) {
+    db.collection('nominations', function(err, collection) {
+        collection.findOne({ where: restaurant }, function(err, nomination) {
+            callback(err, nomination);
+        });
+    });
+}
+
+/* Escape special characters for dynamic regex creation */
+RegExp.quote = function(str) {
+    return str.replace(/([.?*+^$[\]\\(){}-])/g, "\\$1");
+};
+
+var getNominationByPrefix = function(prefix, callback) {
+    db.collection('nominations', function(err, collection) {
+        var search = { where: new RegExp('^' + RegExp.quote(prefix), 'i') };
+        
+        collection.findOne(search, function(err, nomination) {
+            callback(nomination);
+        });
+    });
+}
+
+lunchdb.unnominate = function(restaurant, callback) {
+    if (!connected()) {
+        callback(errors.not_connected);
+        return;
+    }
+    
+    getNominationByPrefix(restaurant, function(nomination) {
+        if (!nomination) {
+            callback(errors.unknown_nomination, null);
+        } else if (nomination.user != 'plucas') {
+            callback(errors.did_not_nominate, null);
+        } else {
+            numVotesFor(nomination.where, function(err, count) {
+                if (count > 0) {
+                    callback(errors.nomination_has_votes, null);
+                } else {
+                    db.collection('nominations', function(err, collection) {
+                        collection.remove({ _id: nomination._id }, function(err, collection) {
+                            callback(null, nomination.where);
+                        });
+                    });
+                }
+            });
+        }
+    });
+}
+
 var clearUserVotes = function(callback) {
     db.collection('users', function(err, collection) {
         collection.find(function(err, cursor) {
@@ -264,10 +356,6 @@ lunchdb.drive = function(seatsStr, callback) {
     });
 };
 
-/* Escape special characters for dynamic regex creation */
-RegExp.quote = function(str) {
-    return str.replace(/([.?*+^$[\]\\(){}-])/g, "\\$1");
-};
 
 var setUserVote = function(name, vote, callback) {
     db.collection('users', function(err, collection) {

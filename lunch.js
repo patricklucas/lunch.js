@@ -80,6 +80,26 @@ var nominate = function(req, res) {
     });
 }
 
+var unnominate = function(req, res) {
+    var restaurant = req.body['nomination'];
+    
+    lunchdb.unnominate(restaurant, function(err, nomination) {
+        var out = errOrOk(err);
+
+        if (isJson(req))
+            sendJson(out, res);
+        else if (isTxt(req)) {
+            if (out.status == 'ok')
+                sendTxt('Nomination for \'' + nomination + '\' removed.', res);
+            else
+                sendTxt(out.error, res);
+        } else
+            res.redirect('/');
+
+        res.end();
+    });
+}
+
 var users = function(req, res) {
     lunchdb.userNames(function(err, users) {
         if (isJson(req)) {
@@ -197,6 +217,7 @@ var unvote = function(req, res) {
 app.get('/', nominations)
 app.get('/nominations.:format?', nominations)
 app.post('/nominate.:format?', nominate)
+app.post('/unnominate.:format?', unnominate);
 app.get('/users.:format?', users)
 app.get('/users/count.:format?', usersCount);
 app.post('/reset.:format?', reset);
