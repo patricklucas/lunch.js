@@ -214,11 +214,11 @@ var unvote = function(req, res) {
     });
 }
 
-app.get('/', nominations)
-app.get('/nominations.:format?', nominations)
-app.post('/nominate.:format?', nominate)
+app.get('/', nominations);
+app.get('/nominations.:format?', nominations);
+app.post('/nominate.:format?', nominate);
 app.post('/unnominate.:format?', unnominate);
-app.get('/users.:format?', users)
+app.get('/users.:format?', users);
 app.get('/users/count.:format?', usersCount);
 app.post('/reset.:format?', reset);
 app.post('/drive.:format?', drive);
