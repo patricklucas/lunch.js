@@ -220,6 +220,27 @@ var unvote = function(req, res) {
     });
 }
 
+var comment = function(req, res) {
+    var comment = req.body['comment'];
+    
+    lunchdb.comment(comment, function(err, realComment) {
+        var out = errOrOk(err);
+        
+        if (isJson(req))
+            sendJson(out, res);
+        else if (isText(req)) {
+            if (out.status == 'ok') {
+                sendText('Comment set to \'' + realComment + '\'.', res);
+            } else {
+                sendText(out.error, res);
+            }
+        } else
+            res.redirect('/');
+        
+        res.end();
+    });
+}
+
 app.get('/', nominations);
 app.get('/nominations.:format?', nominations);
 app.get('/users.:format?', users);
@@ -230,6 +251,7 @@ app.post('/reset.:format?', reset);
 app.post('/drive.:format?', drive);
 app.post('/vote.:format?', vote);
 app.post('/unvote.:format?', unvote);
+app.post('/comment.:format?', comment);
 
 lunchdb.connect(function(err) {
     if (err) {

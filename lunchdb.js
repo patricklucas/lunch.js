@@ -118,7 +118,7 @@ var collectVotes = function(callback) {
     db.collection('users', function(err, collection) {
         collection.mapReduce(function() {
             if (this.vote)
-                emit(this.vote, {users: [this.name]});
+                emit(this.vote, {users: [this]});
         }, function(key, values) {
             var users = [];
             
@@ -150,7 +150,7 @@ var collectVotesFor = function(nomination, callback) {
             
             cursor.each(function(err, user) {
                 if (user) {
-                    votes.push(user.name);
+                    votes.push(user);
                 } else {
                     callback(null, votes);
                 }
@@ -163,6 +163,30 @@ var numVotesFor = function(nomination, callback) {
     db.collection('users', function(err, collection) {
         collection.count({ vote: nomination }, function(err, count) {
             callback(err, count);
+        });
+    });
+}
+
+var stripComment = function(str) {
+    return str
+        .replace(/^\s+|\s+$/g, '')
+        .replace(/[\r\n]+/g, ' ');
+}
+
+var setUserComment = function(name, comment, callback) {
+    db.collection('users', function(err, collection) {
+        collection.findOne({ name: name }, function(err, user) {
+            if (user == null)
+                callback(errors.unknown_user, null);
+            else {
+                var realComment = stripComment(comment);
+                
+                user.comment = realComment;
+                
+                collection.save(user, function(err) {
+                    callback(null, realComment);
+                });
+            }
         });
     });
 }
@@ -422,5 +446,16 @@ lunchdb.unvote = function(callback) {
     
     setUserVote('plucas', null, function(err, oldVote) {
         callback(null, oldVote);
+    });
+}
+
+lunchdb.comment = function(comment, callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+    
+    setUserComment('plucas', comment, function(err, realComment) {
+        callback(err, realComment);
     });
 }

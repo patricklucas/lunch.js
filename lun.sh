@@ -24,6 +24,10 @@ then
 elif [ $1 = "-u" ]
 then
     $CURL -X POST $HOST/unvote.txt
+elif [ $1 = "-c" -a -n "$2" ]
+then
+    shift
+    $CURL $HOST/comment.txt -d comment="$*"
 elif [ -n "$1" ]
 then
     $CURL $HOST/vote.txt -d restaurant="$*"

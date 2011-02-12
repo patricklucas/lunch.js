@@ -5,7 +5,11 @@
       <li><%= nomination.where %> (<%= nomination.user %>)
         <ul>
           <% nomination.votes.forEach(function(user) { %>
-            <li><%= user %></li>
+            <li><%= user.name %>
+                <% if (user.comment) { %>
+                    -- <%= user.comment %>
+                <% } %>
+            </li>
           <% }) %>
         </ul>
       </li>
