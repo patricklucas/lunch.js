@@ -16,6 +16,9 @@ Actions
  * Nominate a restaurant
    * POST /nominate ?nomination (the restaurant to nominate)
    * `lun.sh -a <restaurant>`
+ * Remove a nomination
+   * POST /unnominate ?nomination
+   * `lun.sh -r <restaurant>`
  * Vote for a restaurant
    * POST /vote ?restaurant (the prefix of the restaurant, eg. 'chi' matches 'Chick-fil-A')
    * `lun.sh <restaurant-prefix>`
@@ -25,6 +28,9 @@ Actions
  * Mark yourself as a driver
    * POST /drive ?seats (number of available seats for passengers)
    * `lun.sh -d <seats>`
+ * Set your user comment
+   * POST /comment ?comment
+   * `lun.sh -c <comment>`
  * Reset the list of nominations
    * POST /reset
    * `lun.sh --reset`
@@ -33,5 +39,4 @@ To-Do for Alpha
 ---------------
 
  * User authentication
- * Remove a nomination
- * User comments
+ * Show drivers
