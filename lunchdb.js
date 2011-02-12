@@ -356,6 +356,17 @@ lunchdb.drive = function(seatsStr, callback) {
     });
 };
 
+var getUserByName = function(name, callback) {
+    db.collection('users', function(err, collection) {
+        collection.findOne({ name: name }, function(err, user) {
+            if (user == null)
+                callback(errors.unknown_user, null);
+            else {
+                callback(null, user);
+            }
+        });
+    });
+}
 
 var setUserVote = function(name, vote, callback) {
     db.collection('users', function(err, collection) {
@@ -381,26 +392,20 @@ lunchdb.vote = function(restaurant, callback) {
         return;
     }
 
-    db.collection('nominations', function(err, collection) {
-        var search = { where: new RegExp('^' + RegExp.quote(restaurant), 'i') };
+    getNominationByPrefix(restaurant, function(nomination) {
+        if (nomination == null)
+            callback(errors.unknown_nomination, null);
+        else {
+            var vote = nomination.where;
 
-        collection.find(search, function(err, cursor) {
-            cursor.nextObject(function(err, nomination) {
-                if (nomination == null)
-                    callback(errors.unknown_nomination, null);
-                else {
-                    var vote = nomination.where;
-
-                    setUserVote('plucas', vote, function(err, oldVote) {
-                        if (err) {
-                            callback(err, null);
-                        } else {
-                            callback(null, {old: oldVote, new: vote});
-                        }
-                    });
+            setUserVote('plucas', vote, function(err, oldVote) {
+                if (err) {
+                    callback(err, null);
+                } else {
+                    callback(null, {old: oldVote, new: vote});
                 }
             });
-        });
+        }
     });
 };
 
