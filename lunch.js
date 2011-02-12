@@ -19,7 +19,8 @@ app.set('view options', {
 });
 
 var isJson = function(req) { return req.params.format == 'json'; };
-var isTxt = function(req) { return req.params.format == 'txt'; };
+var isText = function(req) { return req.params.format == 'txt'; };
+
 var errOrOk = function(err) {
     return (!!err) ? { status: 'error', error: err } : { status: 'ok' };
 }
@@ -40,9 +41,14 @@ var sendJson = function(json, res) {
     res.write(JSON.stringify(json));
 };
 
-var sendTxt = function(txt, res) {
+var sendText = function(text, res) {
     writeHeadOk(res, 'text');
-    res.write(txt + '\n');
+    res.write(text + '\n');
+};
+
+var sendHtml = function(html, res) {
+    writeHeadOk(res, 'html');
+    res.write(html + '\n');
 };
 
 var nominations = function(req, res) {
@@ -50,10 +56,39 @@ var nominations = function(req, res) {
         if (isJson(req))
             sendJson(nominations, res);
         else {
-            var format = isTxt(req) ? 'txt' : 'html';
+            var format = isText(req) ? 'txt' : 'html';
             res.render(format + '/nominations.ejs', {
                 locals: { nominations: nominations }
             });
+        }
+
+        res.end();
+    });
+}
+
+var users = function(req, res) {
+    lunchdb.userNames(function(err, users) {
+        if (isJson(req)) {
+            sendJson({ users: users }, res);
+        } else {
+            var format = isText(req) ? 'txt' : 'html';
+            res.render(format + '/users.ejs', {
+                locals: { users: users }
+            });
+        }
+
+        res.end();
+    });
+}
+
+var usersCount = function(req, res) {
+    lunchdb.usersCount(function(err, count) {
+        if (isJson(req)) {
+            sendJson({ usersCount: count }, res);
+        } else if (isText(req)) {
+            sendText('Number of users: ' + count, res);
+        } else {
+            sendHtml('Number of users: <strong>' + count + '</strong>');
         }
 
         res.end();
@@ -68,11 +103,11 @@ var nominate = function(req, res) {
 
         if (isJson(req))
             sendJson(out, res);
-        else if (isTxt(req)) {
+        else if (isText(req)) {
             if (out.status == 'ok')
-                sendTxt('Nomination for \'' + nomination + '\' successful.', res);
+                sendText('Nomination for \'' + nomination + '\' successful.', res);
             else
-                sendTxt(out.error, res);
+                sendText(out.error, res);
         } else
             res.redirect('/');
 
@@ -88,43 +123,13 @@ var unnominate = function(req, res) {
 
         if (isJson(req))
             sendJson(out, res);
-        else if (isTxt(req)) {
+        else if (isText(req)) {
             if (out.status == 'ok')
-                sendTxt('Nomination for \'' + nomination + '\' removed.', res);
+                sendText('Nomination for \'' + nomination + '\' removed.', res);
             else
-                sendTxt(out.error, res);
+                sendText(out.error, res);
         } else
             res.redirect('/');
-
-        res.end();
-    });
-}
-
-var users = function(req, res) {
-    lunchdb.userNames(function(err, users) {
-        if (isJson(req)) {
-            sendJson({ users: users }, res);
-        } else {
-            var format = isTxt(req) ? 'txt' : 'html';
-            res.render(format + '/users.ejs', {
-                locals: { users: users }
-            });
-        }
-
-        res.end();
-    });
-}
-
-var usersCount = function(req, res) {
-    lunchdb.usersCount(function(err, count) {
-        if (isJson(req)) {
-            sendJson({ usersCount: count }, res);
-        } else if (isTxt(req)) {
-            sendTxt('Number of users: ' + count, res);
-        } else {
-            writeHeadOk(res);
-            res.write('Number of users: <strong>' + count + '</strong>');
-        }
 
         res.end();
     });
@@ -136,11 +141,11 @@ var reset = function(req, res) {
 
         if (isJson(req))
             sendJson(out, res);
-        else if (isTxt(req)) {
+        else if (isText(req)) {
             if (out.status == 'ok')
-                sendTxt('Database reset.', res);
+                sendText('Database reset.', res);
             else
-                sendTxt(out.error, res);
+                sendText(out.error, res);
         } else
             res.redirect('/');
 
@@ -156,11 +161,11 @@ var drive = function(req, res) {
 
         if (isJson(req))
             sendJson(out, res);
-        else if (isTxt(req)) {
+        else if (isText(req)) {
             if (out.status == 'ok')
-                sendTxt('You have ' + seats + ' seats available.', res);
+                sendText('You have ' + seats + ' seats available.', res);
             else
-                sendTxt(out.error, res);
+                sendText(out.error, res);
         } else
             res.redirect('/');
 
@@ -170,22 +175,23 @@ var drive = function(req, res) {
 
 var vote = function(req, res) {
     var restaurant = req.body['restaurant'];
-
+    
     lunchdb.vote(restaurant, function(err, change) {
         var out = errOrOk(err);
 
         if (isJson(req))
             sendJson(out, res);
-        else if (isTxt(req)) {
+        else if (isText(req)) {
             if (out.status == 'ok') {
                 if (!change.old)
-                    sendTxt('Vote for \'' + change.new + '\' successful.', res);
+                    sendText('Vote for \'' + change.new + '\' successful.', res);
                 else if (change.old == change.new)
-                    sendTxt('Vote for \'' + change.new + '\' unchanged.', res);
+                    sendText('Vote for \'' + change.new + '\' unchanged.', res);
                 else
-                    sendTxt('Vote changed from \'' + change.old + '\' to \'' + change.new + '\'', res);
-            } else
-                sendTxt(out.error, res);
+                    sendText('Vote changed from \'' + change.old + '\' to \'' + change.new + '\'.', res);
+            } else {
+                sendText(out.error, res);
+            }
         } else
             res.redirect('/');
 
@@ -199,14 +205,14 @@ var unvote = function(req, res) {
 
         if (isJson(req))
             sendJson(out, res);
-        else if (isTxt(req)) {
+        else if (isText(req)) {
             if (out.status == 'ok') {
                 if (oldVote)
-                    sendTxt('No longer voting for \'' + oldVote + '\'.', res);
+                    sendText('No longer voting for \'' + oldVote + '\'.', res);
                 else
-                    sendTxt("You weren't voting for anything!", res);
+                    sendText("You weren't voting for anything!", res);
             } else
-                sendTxt(out.error, res);
+                sendText(out.error, res);
         } else
             res.redirect('/');
 
@@ -216,10 +222,10 @@ var unvote = function(req, res) {
 
 app.get('/', nominations);
 app.get('/nominations.:format?', nominations);
-app.post('/nominate.:format?', nominate);
-app.post('/unnominate.:format?', unnominate);
 app.get('/users.:format?', users);
 app.get('/users/count.:format?', usersCount);
+app.post('/nominate.:format?', nominate);
+app.post('/unnominate.:format?', unnominate);
 app.post('/reset.:format?', reset);
 app.post('/drive.:format?', drive);
 app.post('/vote.:format?', vote);

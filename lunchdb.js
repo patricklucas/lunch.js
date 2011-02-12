@@ -13,7 +13,7 @@ var lunchdb = exports;
 var db = new Db(dbname, new Server(host, port, {}));
 
 var errors = {
-    not_connected: 'Database not connected. Call connect()',
+    not_connected: 'Database not connected. Call lunchdb.connect().',
     already_nominated: 'That place was already nominated.',
     too_many_nominations: 'You can only nominate 2 restaurants.',
     unknown_nomination: 'That restaurant hasn\'t been nominated.',
@@ -27,6 +27,174 @@ var errors = {
 var connected = function() {
     return db && db.state == 'connected';
 };
+
+var getUserByName = function(name, callback) {
+    db.collection('users', function(err, collection) {
+        collection.findOne({ name: name }, function(err, user) {
+            if (user == null)
+                callback(errors.unknown_user, null);
+            else {
+                callback(null, user);
+            }
+        });
+    });
+}
+
+var getNomination = function(restaurant, callback) {
+    db.collection('nominations', function(err, collection) {
+        collection.findOne({ where: restaurant }, function(err, nomination) {
+            callback(nomination || null);
+        });
+    });
+}
+
+/* Escape special characters for dynamic regex creation */
+RegExp.quote = function(str) {
+    return str.replace(/([.?*+^$[\]\\(){}-])/g, "\\$1");
+};
+
+var getNominationByPrefix = function(prefix, callback) {
+    db.collection('nominations', function(err, collection) {
+        var search = { where: new RegExp('^' + RegExp.quote(prefix), 'i') };
+        
+        collection.findOne(search, function(err, nomination) {
+            callback(nomination || null);
+        });
+    });
+}
+
+var getUserNominations = function(user, callback) {
+    db.collection('nominations', function(err, collection) {
+        collection.find({ user: user }, function(err, cursor) {
+            var nominations = {};
+            
+            cursor.each(function(err, nomination) {
+                if (nomination) {
+                    nominations[nomination.where] = nomination.where;
+                } else {
+                    callback(null, nominations);
+                }
+            });
+        });
+    });
+}
+
+var addNomination = function(user, restaurant, callback) {
+    db.collection('nominations', function(err, collection) {
+        collection.findOne({ where: restaurant }, function(err, nomination) {
+            if (nomination) {
+                callback(errors.already_nominated);
+            } else {
+                collection.insert({
+                    user: user,
+                    where: restaurant
+                }, function(docs) {
+                    callback(null);
+                });
+            }
+        });
+    });
+}
+
+var setUserVote = function(name, vote, callback) {
+    db.collection('users', function(err, collection) {
+        collection.findOne({ name: name }, function(err, user) {
+            if (user == null)
+                callback(errors.unknown_user, null);
+            else {
+                var oldVote = user.vote || null;
+                
+                user.vote = vote;
+                
+                collection.save(user, function(err) {
+                    callback(null, oldVote);
+                });
+            }
+        });
+    });
+}
+
+var collectVotes = function(callback) {
+    db.collection('users', function(err, collection) {
+        collection.mapReduce(function() {
+            if (this.vote)
+                emit(this.vote, {users: [this.name]});
+        }, function(key, values) {
+            var users = [];
+            
+            values.forEach(function(doc) {
+                users = users.concat(doc.users);
+            });
+            
+            return {users: users};
+        }, function(err, mrCollection) {
+            mrCollection.find(function(err, cursor) {
+                cursor.toArray(function(err, arr) {
+                    var votes = {};
+                    
+                    arr.forEach(function(mrResult) {
+                        votes[mrResult._id] = mrResult.value.users;
+                    });
+                    
+                    callback(null, votes);
+                });
+            });
+        });
+    });
+}
+
+var collectVotesFor = function(nomination, callback) {
+    db.collection('users', function(err, collection) {
+        collection.find({ vote: nomination }, function(err, cursor) {
+            var votes = [];
+            
+            cursor.each(function(err, user) {
+                if (user) {
+                    votes.push(user.name);
+                } else {
+                    callback(null, votes);
+                }
+            });
+        });
+    });
+}
+
+var numVotesFor = function(nomination, callback) {
+    db.collection('users', function(err, collection) {
+        collection.count({ vote: nomination }, function(err, count) {
+            callback(err, count);
+        });
+    });
+}
+
+var clearUserVotes = function(callback) {
+    db.collection('users', function(err, collection) {
+        collection.find(function(err, cursor) {
+            cursor.each(function(err, user) {
+                if (user) {
+                    user.vote = null;
+                    collection.save(user, function() {});
+                } else {
+                    callback();
+                }
+            });
+        });
+    });
+}
+
+var clearNominations = function(callback) {
+    db.collection('nominations', function(err, collection) {
+        if (!err) {
+            collection.remove(function(err, collection) {
+                if (!err)
+                    callback(null);
+                else
+                    callback(err);
+            });
+        } else
+            callback(err);
+    });
+}
 
 lunchdb.connected = connected;
 
@@ -83,59 +251,6 @@ lunchdb.usersCount = function(callback) {
     }); 
 };
 
-var collectVotes = function(callback) {
-    db.collection('users', function(err, collection) {
-        collection.mapReduce(function() {
-            if (this.vote)
-                emit(this.vote, {users: [this.name]});
-        }, function(key, values) {
-            var users = [];
-            
-            values.forEach(function(doc) {
-                users = users.concat(doc.users);
-            });
-            
-            return {users: users};
-        }, function(err, mrCollection) {
-            mrCollection.find(function(err, cursor) {
-                cursor.toArray(function(err, arr) {
-                    var votes = {};
-                    
-                    arr.forEach(function(mrResult) {
-                        votes[mrResult._id] = mrResult.value.users;
-                    });
-                    
-                    callback(null, votes);
-                });
-            });
-        });
-    });
-}
-
-var collectVotesFor = function(nomination, callback) {
-    db.collection('users', function(err, collection) {
-        collection.find({ vote: nomination }, function(err, cursor) {
-            var votes = [];
-            
-            cursor.each(function(err, user) {
-                if (user) {
-                    votes.push(user.name);
-                } else {
-                    callback(null, votes);
-                }
-            });
-        });
-    });
-}
-
-var numVotesFor = function(nomination, callback) {
-    db.collection('users', function(err, collection) {
-        collection.count({ vote: nomination }, function(err, count) {
-            callback(err, count);
-        });
-    });
-}
-
 lunchdb.nominations = function(callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
@@ -182,7 +297,7 @@ lunchdb.nominations = function(callback) {
     });
 };
 
-lunchdb.nominate = function(nomination, callback) {
+lunchdb.nominate = function(restaurant, callback) {
     if (!connected()) {
         callback(errors.not_connected);
         return;
@@ -195,63 +310,12 @@ lunchdb.nominate = function(nomination, callback) {
                 return;
             }
 
-            collection.find({ where: nomination }, function(err, cursor) {
-                cursor.nextObject(function(err, doc) {
-                    if (doc != null) {
-                        callback(errors.already_nominated);
-                    } else {
-                        collection.insert({
-                            user: 'plucas',
-                            votes: [],
-                            where: nomination
-                        }, function(docs) {
-                            callback(null);
-                        });
-                    }
-                });
+            addNomination('plucas', restaurant, function(err) {
+                callback(err);
             });
         });
     });
 };
-
-var getUserNominations = function(user, callback) {
-    db.collection('nominations', function(err, collection) {
-        collection.find({ user: user }, function(err, cursor) {
-            var nominations = {};
-            
-            cursor.each(function(err, nomination) {
-                if (nomination) {
-                    nominations[nomination.where] = nomination.where;
-                } else {
-                    callback(null, nominations);
-                }
-            });
-        });
-    });
-}
-
-var getNomination = function(restaurant, callback) {
-    db.collection('nominations', function(err, collection) {
-        collection.findOne({ where: restaurant }, function(err, nomination) {
-            callback(err, nomination);
-        });
-    });
-}
-
-/* Escape special characters for dynamic regex creation */
-RegExp.quote = function(str) {
-    return str.replace(/([.?*+^$[\]\\(){}-])/g, "\\$1");
-};
-
-var getNominationByPrefix = function(prefix, callback) {
-    db.collection('nominations', function(err, collection) {
-        var search = { where: new RegExp('^' + RegExp.quote(prefix), 'i') };
-        
-        collection.findOne(search, function(err, nomination) {
-            callback(nomination);
-        });
-    });
-}
 
 lunchdb.unnominate = function(restaurant, callback) {
     if (!connected()) {
@@ -271,41 +335,12 @@ lunchdb.unnominate = function(restaurant, callback) {
                 } else {
                     db.collection('nominations', function(err, collection) {
                         collection.remove({ _id: nomination._id }, function(err, collection) {
-                            callback(null, nomination.where);
+                            callback(null, nomination.where || null);
                         });
                     });
                 }
             });
         }
-    });
-}
-
-var clearUserVotes = function(callback) {
-    db.collection('users', function(err, collection) {
-        collection.find(function(err, cursor) {
-            cursor.each(function(err, user) {
-                if (user) {
-                    user.vote = null;
-                    collection.save(user, function() {});
-                } else {
-                    callback();
-                }
-            });
-        });
-    });
-}
-
-var clearNominations = function(callback) {
-    db.collection('nominations', function(err, collection) {
-        if (!err) {
-            collection.remove(function(err, collection) {
-                if (!err)
-                    callback(null);
-                else
-                    callback(err);
-            });
-        } else
-            callback(err);
     });
 }
 
@@ -355,36 +390,6 @@ lunchdb.drive = function(seatsStr, callback) {
         });
     });
 };
-
-var getUserByName = function(name, callback) {
-    db.collection('users', function(err, collection) {
-        collection.findOne({ name: name }, function(err, user) {
-            if (user == null)
-                callback(errors.unknown_user, null);
-            else {
-                callback(null, user);
-            }
-        });
-    });
-}
-
-var setUserVote = function(name, vote, callback) {
-    db.collection('users', function(err, collection) {
-        collection.findOne({ name: name }, function(err, user) {
-            if (user == null)
-                callback(errors.unknown_user, null);
-            else {
-                var oldVote = user.vote || null;
-                
-                user.vote = vote;
-                
-                collection.save(user, function(err) {
-                    callback(null, oldVote);
-                });
-            }
-        });
-    });
-}
 
 lunchdb.vote = function(restaurant, callback) {
     if (!connected()) {
