@@ -41,5 +41,3 @@ To-Do for Alpha
 ---------------
 
  * User authentication
- * Show drivers
- * Bash completion of nominations for lun.sh
