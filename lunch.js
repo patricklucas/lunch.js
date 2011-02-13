@@ -20,6 +20,7 @@ app.set('view options', {
 
 var isJson = function(req) { return req.params.format == 'json'; };
 var isText = function(req) { return req.params.format == 'txt'; };
+var isBash = function(req) { return req.params.format == 'bash'; };
 
 var errOrOk = function(err) {
     return (!!err) ? { status: 'error', error: err } : { status: 'ok' };
@@ -51,11 +52,31 @@ var sendHtml = function(html, res) {
     res.write(html + '\n');
 };
 
+var formatBash = function(nominations) {
+    restaurants = [];
+
+    nominations.forEach(function(nomination) {
+        restaurants.push(nomination.where);
+
+        /* Attempt to make completion case-insensitive */
+        /*
+        restaurant = nomination.where;
+
+        restaurants.push(restaurant.charAt(0).toUpperCase() + restaurant.slice(1));
+        restaurants.push(restaurant.charAt(0).toLowerCase() + restaurant.slice(1));
+        */
+    });
+
+    return "'" + restaurants.join("' '") + "'";
+}
+
 var nominations = function(req, res) {
     lunchdb.nominations(function(err, nominations) {
-        if (isJson(req))
+        if (isJson(req)) {
             sendJson(nominations, res);
-        else {
+        } else if (isBash(req)) {
+            sendText(formatBash(nominations), res);
+        } else {
             var format = isText(req) ? 'txt' : 'html';
             res.render(format + '/nominations.ejs', {
                 locals: { nominations: nominations }

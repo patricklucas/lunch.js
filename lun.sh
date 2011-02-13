@@ -4,6 +4,17 @@ HOST="https://localhost:8000"
 
 CURL="curl -k -s"
 
+CONFIG_DIR="$HOME/.lunch"
+RESTAURANTS_FILE="$CONFIG_DIR/restaurants.bash"
+
+if [ "$(type -t _lunch)" = "function" ]
+then
+    if [ -f $CONFIG_DIR/completion ]
+    then
+        . $CONFIG_DIR/completion
+    fi
+fi
+
 if [ $# = 0 ]
 then
     $CURL $HOST/nominations.txt
@@ -31,4 +42,9 @@ then
 elif [ -n "$1" ]
 then
     $CURL $HOST/vote.txt -d restaurant="$*"
+fi
+
+if [ -d "$CONFIG_DIR" ]
+then
+    $CURL $HOST/nominations.bash > "$RESTAURANTS_FILE"
 fi
