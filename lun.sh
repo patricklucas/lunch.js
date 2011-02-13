@@ -21,14 +21,6 @@ then
     fi
 fi
 
-if [ "$(type -t _lunch)" = "function" ]
-then
-    if [ -f $CONFIG_DIR/completion ]
-    then
-        . $CONFIG_DIR/completion
-    fi
-fi
-
 # Setup complete, check if user has a token
 if [ -f $CONFIG_DIR/token ]
 then
@@ -90,6 +82,3 @@ then
 else
     $CURL $HOST/vote.txt -d restaurant="$*"
 fi
-
-# Populate the completion file
-$CURL $HOST/nominations.bash > "$RESTAURANTS_FILE" &

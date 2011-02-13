@@ -41,3 +41,4 @@ To-Do for Alpha
 ---------------
 
  * User authentication
+ * Tab completion for nominations
