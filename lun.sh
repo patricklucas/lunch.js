@@ -10,11 +10,11 @@ then
 elif [ $1 = "-a" -a -n "$2" ]
 then
     shift
-    $CURL $HOST/nominate.txt -d nomination="$*"
+    $CURL $HOST/nominate.txt -d restaurant="$*"
 elif [ $1 = "-r" -a -n "$2" ]
 then
     shift
-    $CURL $HOST/unnominate.txt -d nomination="$*"
+    $CURL $HOST/unnominate.txt -d restaurant="$*"
 elif [ $1 = "-u" ]
 then
     $CURL -X POST $HOST/unvote.txt

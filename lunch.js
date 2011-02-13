@@ -96,16 +96,16 @@ var usersCount = function(req, res) {
 }
 
 var nominate = function(req, res) {
-    var nomination = req.body['nomination'];
+    var restaurant = req.body['restaurant'];
 
-    lunchdb.nominate(nomination, function(err) {
+    lunchdb.nominate(restaurant, function(err) {
         var out = errOrOk(err);
 
         if (isJson(req))
             sendJson(out, res);
         else if (isText(req)) {
             if (out.status == 'ok')
-                sendText('Nomination for \'' + nomination + '\' successful.', res);
+                sendText('Nomination for \'' + restaurant + '\' successful.', res);
             else
                 sendText(out.error, res);
         } else
@@ -116,7 +116,7 @@ var nominate = function(req, res) {
 }
 
 var unnominate = function(req, res) {
-    var restaurant = req.body['nomination'];
+    var restaurant = req.body['restaurant'];
     
     lunchdb.unnominate(restaurant, function(err, nomination) {
         var out = errOrOk(err);

@@ -5,6 +5,8 @@ lunch.js is a Node.js application that provides a REST interface for deciding wh
 
 All requests respond to .json, .txt, or the default, .html.
 
+Methods that query already-nominated restaurants (vote and unnominate) can be referred to by prefix. For example, 'chi' matches 'Chick-fil-A'.
+
 Actions
 -------
 
@@ -14,14 +16,14 @@ Actions
  * List users
    * GET /users
  * Nominate a restaurant
-   * POST /nominate ?nomination (the restaurant to nominate)
+   * POST /nominate ?restaurant
    * `lun.sh -a <restaurant>`
  * Remove a nomination
-   * POST /unnominate ?nomination
+   * POST /unnominate ?restaurant
    * `lun.sh -r <restaurant>`
  * Vote for a restaurant
-   * POST /vote ?restaurant (the prefix of the restaurant, eg. 'chi' matches 'Chick-fil-A')
-   * `lun.sh <restaurant-prefix>`
+   * POST /vote ?restaurant
+   * `lun.sh <restaurant>`
  * Remove your vote
    * POST /unvote
    * `lun.sh -u`
@@ -31,7 +33,7 @@ Actions
  * Set your user comment
    * POST /comment ?comment
    * `lun.sh -c <comment>`
- * Reset the list of nominations
+ * Clear all nominations and votes
    * POST /reset
    * `lun.sh --reset`
 
