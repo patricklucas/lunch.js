@@ -1,22 +1,18 @@
 COMMAND="lun.sh"
-RESTAURANTS_FILE="${HOME}/.lunch/restaurants.bash"
+RESTAURANTS_FILE="$HOME/.lunch/restaurants.bash"
 
 _lunch()
 {
-    if [ ! -e ${RESTAURANTS_FILE} ]
+    if [ ! -e $RESTAURANTS_FILE ]
     then
         return 1
     fi
 
     local cur restaurants
 
-    COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    restaurants="$(cat ${RESTAURANTS_FILE})"
 
-    COMPREPLY=( $(compgen -W "$restaurants" -- ${cur}) )
-
-    return 0
+    COMPREPLY=( $(compgen -W "$(cat $RESTAURANTS_FILE)" -- "$cur") )
 }
 
-complete -F _lunch ${COMMAND}
+complete -F _lunch $COMMAND
