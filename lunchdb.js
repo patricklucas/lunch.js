@@ -21,7 +21,8 @@ var errors = {
     nan: 'Not a number.',
     negative: 'Must be non-negative.',
     did_not_nominate: 'You didn\'t nominate that restaurant.',
-    nomination_has_votes: 'Can\'t remove a nomination with votes.'
+    nomination_has_votes: 'Can\'t remove a nomination with votes.',
+    username_taken: 'That username is already in use.'
 };
 
 var connected = function() {
@@ -240,6 +241,82 @@ lunchdb.connect = function(callback) {
     });
 };
 
+var generateToken = function() {
+	var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+	var len = 64;
+    
+	var s = "";
+	for (var i = 0; i < len; i++) {
+        s += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+    
+    return s;
+}
+
+var setUserToken = function(username, token, callback) {
+    db.collection('auth', function(err, collection) {
+        collection.findOne({ user: username }, function(err, auth) {
+            if (auth) {
+                auth.token = token;
+                
+                collection.save(auth, function(err) {
+                    callback(null);
+                });
+            } else {
+                collection.insert({
+                    user: username,
+                    token: token
+                }, function(docs) {
+                    callback(null);
+                });
+            }
+        });
+    });
+}
+
+var addUser = function(username, callback) {
+    db.collection('users', function(err, collection) {
+        collection.insert({
+            name: username,
+            vote: null,
+            comment: null,
+            seats: 0
+        }, function(docs) {
+            callback(null);
+        });
+    });
+}
+
+lunchdb.register = function(username, callback) {
+    if (!connected()) {
+        callback(errors.not_connected, null);
+        return;
+    }
+    
+    getUserByName(username, function(err, user) {
+        if (user) {
+            callback(errors.username_taken, null);
+        } else {
+            var token = generateToken();
+            callback(null, token);
+            addUser(username, function() {});
+            setUserToken(username, token, function() {});
+        }
+    });
+}
+
+lunchdb.auth = function(token, callback) {
+    db.collection('auth', function(err, collection) {
+        collection.findOne({ token: token }, function(err, auth) {
+            if (auth) {
+                callback(null, auth.user);
+            } else {
+                callback(errors.unknown_user, null);
+            }
+        });
+    });
+}
+
 lunchdb.userNames = function(callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
@@ -321,27 +398,27 @@ lunchdb.nominations = function(callback) {
     });
 };
 
-lunchdb.nominate = function(restaurant, callback) {
+lunchdb.nominate = function(username, restaurant, callback) {
     if (!connected()) {
         callback(errors.not_connected);
         return;
     }
 
     db.collection('nominations', function(err, collection) {
-        collection.count({ user: 'plucas' }, function(err, count) {
+        collection.count({ user: username }, function(err, count) {
             if (count >= 2) {
                 callback(errors.too_many_nominations);
                 return;
             }
 
-            addNomination('plucas', restaurant, function(err) {
+            addNomination(username, restaurant, function(err) {
                 callback(err);
             });
         });
     });
 };
 
-lunchdb.unnominate = function(restaurant, callback) {
+lunchdb.unnominate = function(username, restaurant, callback) {
     if (!connected()) {
         callback(errors.not_connected);
         return;
@@ -350,7 +427,7 @@ lunchdb.unnominate = function(restaurant, callback) {
     getNominationByPrefix(restaurant, function(nomination) {
         if (!nomination) {
             callback(errors.unknown_nomination, null);
-        } else if (nomination.user != 'plucas') {
+        } else if (nomination.user != username) {
             callback(errors.did_not_nominate, null);
         } else {
             numVotesFor(nomination.where, function(err, count) {
@@ -381,7 +458,7 @@ lunchdb.reset = function(callback) {
     });
 }
 
-lunchdb.drive = function(seatsStr, callback) {
+lunchdb.drive = function(username, seatsStr, callback) {
     if (!connected()) {
         callback(errors.not_connected);
         return;
@@ -400,7 +477,7 @@ lunchdb.drive = function(seatsStr, callback) {
     }
 
     db.collection('users', function(err, collection) {
-        collection.find({ name: 'plucas' }, function(err, cursor) {
+        collection.find({ name: username }, function(err, cursor) {
             cursor.nextObject(function(err, doc) {
                 if (doc == null)
                     callback(errors.unknown_user);
@@ -415,7 +492,7 @@ lunchdb.drive = function(seatsStr, callback) {
     });
 };
 
-lunchdb.vote = function(restaurant, callback) {
+lunchdb.vote = function(username, restaurant, callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
         return;
@@ -427,7 +504,7 @@ lunchdb.vote = function(restaurant, callback) {
         else {
             var vote = nomination.where;
 
-            setUserVote('plucas', vote, function(err, oldVote) {
+            setUserVote(username, vote, function(err, oldVote) {
                 if (err) {
                     callback(err, null);
                 } else {
@@ -438,24 +515,24 @@ lunchdb.vote = function(restaurant, callback) {
     });
 };
 
-lunchdb.unvote = function(callback) {
+lunchdb.unvote = function(username, callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
         return;
     }
     
-    setUserVote('plucas', null, function(err, oldVote) {
+    setUserVote(username, null, function(err, oldVote) {
         callback(null, oldVote);
     });
 }
 
-lunchdb.comment = function(comment, callback) {
+lunchdb.comment = function(username, comment, callback) {
     if (!connected()) {
         callback(errors.not_connected, null);
         return;
     }
     
-    setUserComment('plucas', comment, function(err, realComment) {
+    setUserComment(username, comment, function(err, realComment) {
         callback(err, realComment);
     });
 }

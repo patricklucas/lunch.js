@@ -20,6 +20,7 @@ app.set('view options', {
 
 var isJson = function(req) { return req.params.format == 'json'; };
 var isText = function(req) { return req.params.format == 'txt'; };
+var isHtml = function(req) { return req.params.format == 'html'; };
 var isBash = function(req) { return req.params.format == 'bash'; };
 
 var errOrOk = function(err) {
@@ -35,6 +36,11 @@ mimetypes = {
 var writeHeadOk = function(res, mimetype) {
     mimetype = mimetype || 'html';
     res.writeHead(200, {'Content-Type': mimetypes[mimetype]});
+}
+
+var writeHead403 = function(res, mimetype) {
+    mimetype = mimetype || 'html';
+    res.writeHead(403, {'Content-Type': mimetypes[mimetype]});
 }
 
 var sendJson = function(json, res) {
@@ -70,7 +76,51 @@ var formatBash = function(nominations) {
     return "'" + restaurants.join("' '") + "'";
 }
 
-var nominations = function(req, res) {
+var a = function(action) {
+    return function(req, res) {
+        var token = req.body['token'];
+        
+        lunchdb.auth(token, function(err, user) {
+            if (user) {
+                action(user, req, res);
+            } else {
+                forbidden(req, res);
+            }
+        });
+    }
+}
+
+var root = function(req, res) {
+    sendHtml('sup', res);
+    res.end();
+}
+
+var register = function(req, res) {
+    var username = req.body['username'];
+    
+    if (isHtml(req)) {
+        res.redirect('/');
+        res.end();
+        return;
+    }
+    
+    lunchdb.register(username, function(err, token) {
+        var out = errOrOk(err);
+        
+        if (isJson(req))
+            sendJson(out, res);
+        else {
+            if (out.status == 'ok')
+                sendText('Token: ' + token, res);
+            else
+                sendText(out.error, res);
+        }
+        
+        res.end();
+    });
+}
+
+var nominations = function(user, req, res) {
     lunchdb.nominations(function(err, nominations) {
         if (isJson(req)) {
             sendJson(nominations, res);
@@ -87,7 +137,7 @@ var nominations = function(req, res) {
     });
 }
 
-var users = function(req, res) {
+var users = function(user, req, res) {
     lunchdb.userNames(function(err, users) {
         if (isJson(req)) {
             sendJson({ users: users }, res);
@@ -102,7 +152,7 @@ var users = function(req, res) {
     });
 }
 
-var usersCount = function(req, res) {
+var usersCount = function(user, req, res) {
     lunchdb.usersCount(function(err, count) {
         if (isJson(req)) {
             sendJson({ usersCount: count }, res);
@@ -116,10 +166,10 @@ var usersCount = function(req, res) {
     });
 }
 
-var nominate = function(req, res) {
+var nominate = function(user, req, res) {
     var restaurant = req.body['restaurant'];
 
-    lunchdb.nominate(restaurant, function(err) {
+    lunchdb.nominate(user, restaurant, function(err) {
         var out = errOrOk(err);
 
         if (isJson(req))
@@ -136,10 +186,10 @@ var nominate = function(req, res) {
     });
 }
 
-var unnominate = function(req, res) {
+var unnominate = function(user, req, res) {
     var restaurant = req.body['restaurant'];
     
-    lunchdb.unnominate(restaurant, function(err, nomination) {
+    lunchdb.unnominate(user, restaurant, function(err, nomination) {
         var out = errOrOk(err);
 
         if (isJson(req))
@@ -156,7 +206,7 @@ var unnominate = function(req, res) {
     });
 }
 
-var reset = function(req, res) {
+var reset = function(user, req, res) {
     lunchdb.reset(function(err) {
         var out = errOrOk(err);
 
@@ -174,10 +224,10 @@ var reset = function(req, res) {
     });
 }
 
-var drive = function(req, res) {
+var drive = function(user, req, res) {
     var seats = req.body['seats'];
 
-    lunchdb.drive(seats, function(err) {
+    lunchdb.drive(user, seats, function(err) {
         var out = errOrOk(err);
 
         if (isJson(req))
@@ -194,10 +244,10 @@ var drive = function(req, res) {
     });
 }
 
-var vote = function(req, res) {
+var vote = function(user, req, res) {
     var restaurant = req.body['restaurant'];
     
-    lunchdb.vote(restaurant, function(err, change) {
+    lunchdb.vote(user, restaurant, function(err, change) {
         var out = errOrOk(err);
 
         if (isJson(req))
@@ -220,8 +270,8 @@ var vote = function(req, res) {
     });
 }
 
-var unvote = function(req, res) {
-    lunchdb.unvote(function(err, oldVote) {
+var unvote = function(user, req, res) {
+    lunchdb.unvote(user, function(err, oldVote) {
         var out = errOrOk(err);
 
         if (isJson(req))
@@ -241,17 +291,20 @@ var unvote = function(req, res) {
     });
 }
 
-var comment = function(req, res) {
+var comment = function(user, req, res) {
     var comment = req.body['comment'];
     
-    lunchdb.comment(comment, function(err, realComment) {
+    lunchdb.comment(user, comment, function(err, realComment) {
         var out = errOrOk(err);
         
         if (isJson(req))
             sendJson(out, res);
         else if (isText(req)) {
             if (out.status == 'ok') {
-                sendText('Comment set to \'' + realComment + '\'.', res);
+                if (comment)
+                    sendText('Comment set to \'' + realComment + '\'.', res);
+                else
+                    sendText('Comment unset.', res);
             } else {
                 sendText(out.error, res);
             }
@@ -262,17 +315,34 @@ var comment = function(req, res) {
     });
 }
 
-app.get('/', nominations);
-app.get('/nominations.:format?', nominations);
-app.get('/users.:format?', users);
-app.get('/users/count.:format?', usersCount);
-app.post('/nominate.:format?', nominate);
-app.post('/unnominate.:format?', unnominate);
-app.post('/reset.:format?', reset);
-app.post('/drive.:format?', drive);
-app.post('/vote.:format?', vote);
-app.post('/unvote.:format?', unvote);
-app.post('/comment.:format?', comment);
+var forbidden = function(req, res) {
+    if (isJson(req)) {
+        writeHead403(res, 'json');
+        res.write(JSON.stringify({status: error, error: "403 Forbidden"}));
+    } else if (isText(req)) {
+        writeHead403(res, 'text');
+        res.write("403 Forbidden\n");
+    } else {
+        writeHead403(res, 'html');
+        res.write("<h1>403 Forbidden</h1>");
+    }
+    
+    res.end();
+}
+
+app.post('/register.:format?',      register);
+app.get('/',                        root);
+
+app.post('/nominations.:format?',   a(nominations));
+app.post('/users.:format?',         a(users));
+app.post('/users/count.:format?',   a(usersCount));
+app.post('/nominate.:format?',      a(nominate));
+app.post('/unnominate.:format?',    a(unnominate));
+app.post('/reset.:format?',         a(reset));
+app.post('/drive.:format?',         a(drive));
+app.post('/vote.:format?',          a(vote));
+app.post('/unvote.:format?',        a(unvote));
+app.post('/comment.:format?',       a(comment));
 
 lunchdb.connect(function(err) {
     if (err) {
