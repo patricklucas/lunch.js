@@ -47,4 +47,10 @@ Actions
 To-Do for Alpha
 ---------------
 
+ * Make sure no data is leaked through JSON calls
+
+To-Do for Beta
+--------------
+
  * Tab completion for nominations
+ * Move authentication token into a cookie
