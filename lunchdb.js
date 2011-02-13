@@ -14,6 +14,7 @@ var db = new Db(dbname, new Server(host, port, {}));
 
 var errors = {
     not_connected: 'Database not connected. Call lunchdb.connect().',
+    bad_restaurant_name: 'Restaurant name must begin with letter or number.',
     already_nominated: 'That place was already nominated.',
     too_many_nominations: 'You can only nominate 2 restaurants.',
     unknown_nomination: 'That restaurant hasn\'t been nominated.',
@@ -81,6 +82,11 @@ var getUserNominations = function(user, callback) {
 }
 
 var addNomination = function(user, restaurant, callback) {
+    if (!/^[a-zA-Z0-9]/.test(restaurant)) {
+        callback(errors.bad_restaurant_name);
+        return;
+    }
+    
     db.collection('nominations', function(err, collection) {
         collection.findOne({ where: restaurant }, function(err, nomination) {
             if (nomination) {
