@@ -1,39 +1,52 @@
 #!/bin/bash
 
-HOST="https://localhost:8000"
-
-CURL="curl -k -s -X POST"
+SCRIPT=$( basename "$0" )
 
 CONFIG_DIR="$HOME/.lunch"
-TOKEN_FILE="$CONFIG_DIR/token"
+CONFIG_FILE="$CONFIG_DIR/config"
 RESTAURANTS_FILE="$CONFIG_DIR/restaurants.bash"
-
-SCRIPT=$( basename "$0" )
 
 if [ ! -d $CONFIG_DIR ]
 then
-    mkdir $CONFIG_DIR
+    mkdir $CONFIG_DIR 2> /dev/null
     
     if [ $? -ne 0 ]
     then
-        echo "Could not create config dir in $CONFIG_DIR\!"
+        echo "Could not create config dir $CONFIG_DIR!"
         exit 1
     fi
 fi
 
+CURL="curl -k -s -X POST"
+
 # Setup complete, check if user has a token
-if [ -f $CONFIG_DIR/token ]
+if [ -f $CONFIG_DIR/config ]
 then
-    TOKEN=$( tail -n 1 $TOKEN_FILE )
-else
-    if [ "$1" = "-n" -a -n "$2" ]
+    HOST="https://$( head -n 1 $CONFIG_FILE )"
+    TOKEN=$( tail -n 1 $CONFIG_FILE )
+
+    if [ "$HOST" = "" -o "$TOKEN" = "" ]
     then
+        echo "Config file $CONFIG_FILE malformed." 1>&2
+        exit 1
+    fi
+else
+    if [ "$1" = "-n" -a -n "$2" -a "$3" = "-s" -a -n "$4" ]
+    then
+        HOST="https://$4"
         RESP=$( $CURL $HOST/register.txt -d username="$2" )
+
+        if [ $? -eq 7 ]
+        then
+            echo "Couldn't connect to server at $HOST" 1>&2
+            exit 1
+        fi
         
         if [ "$( echo $RESP | cut -c -6 )" = "Token:" ]
         then
-            echo "$2" > "$TOKEN_FILE"
-            echo "$( echo $RESP | cut -c 8- )" >> "$TOKEN_FILE"
+            echo "$4" > "$CONFIG_FILE"
+            echo "$2" >> "$CONFIG_FILE"
+            echo "$( echo $RESP | cut -c 8- )" >> "$CONFIG_FILE"
             echo "You are now registered!"
             exit 0
         else
@@ -41,7 +54,7 @@ else
             exit 1
         fi
     else
-        echo "You must register with '$SCRIPT -n <username>'"
+        echo "You must register with '$SCRIPT -n <username>'" 1>&2
         exit 1
     fi
 fi
@@ -54,7 +67,8 @@ then
     $CURL $HOST/nominations.txt
 elif [ "$1" = "-n" -a -n "$2" ]
 then
-    echo "You are already registered."
+    echo "You are already registered." 1>&2
+    exit 1
 elif [ "$1" = "-a" -a -n "$2" ]
 then
     shift
@@ -81,4 +95,10 @@ then
     $CURL $HOST/reset.txt
 else
     $CURL $HOST/vote.txt -d restaurant="$*"
+fi
+
+if [ $? -ne 0 ]
+then
+    echo "Couldn't connect to server at $HOST" 1>&2
+    exit 1
 fi
