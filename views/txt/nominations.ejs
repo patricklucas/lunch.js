@@ -1,4 +1,4 @@
 <% if (nominations.length) { %>Lunch nominations:
 <% nominations.forEach(function(nomination) { %>  + <%= nomination.where %> (<%= nomination.user %>)
-<% nomination.votes.forEach(function(user) { %>    - <%= user.name %><% if (user.seats > 0) { %> (<%= user.seats %> seat<%= (user.seats > 1) ? 's' : '' %>)<% } %><% if (user.comment) %> -- <%= user.comment %>
+<% nomination.votes.forEach(function(user) { %>    - <%= user.name %><% if (user.seats > 0) { %> (<%= user.seats %> seat<%= (user.seats > 1) ? 's' : '' %>)<% } %><% if (user.comment) { %> -- <%= user.comment %><% } %>
 <% })}) %><% } else { %>No Lunch nominations<% } %>
