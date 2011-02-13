@@ -7,34 +7,41 @@ All requests respond to .json, .txt, or the default, .html.
 
 Methods that query already-nominated restaurants (vote and unnominate) can be referred to by prefix. For example, 'chi' matches 'Chick-fil-A'.
 
+All actions except register require a variable 'token' with the user's unique token.
+
 Actions
 -------
 
+ * Register
+   * /register ?username
+   * `lun.sh -n <username> -s <server-with-port>
  * List nominations
-   * GET /nominations
+   * /nominations
    * `lun.sh` (no parameters)
  * List users
-   * GET /users
+   * /users
  * Nominate a restaurant
-   * POST /nominate ?restaurant
+   * /nominate ?restaurant
    * `lun.sh -a <restaurant>`
  * Remove a nomination
-   * POST /unnominate ?restaurant
+   * /unnominate ?restaurant
    * `lun.sh -r <restaurant>`
  * Vote for a restaurant
-   * POST /vote ?restaurant
+   * /vote ?restaurant
    * `lun.sh <restaurant>`
  * Remove your vote
-   * POST /unvote
+   * /unvote
    * `lun.sh -u`
  * Mark yourself as a driver
-   * POST /drive ?seats (number of available seats for passengers)
+   * /drive ?seats (number of available seats for passengers)
    * `lun.sh -d <seats>`
  * Set your user comment
-   * POST /comment ?comment
+   * /comment ?comment
    * `lun.sh -c <comment>`
+ * Clear your user comment
+   * `lun.sh -C`
  * Clear all nominations and votes
-   * POST /reset
+   * /reset
    * `lun.sh --reset`
 
 To-Do for Alpha
