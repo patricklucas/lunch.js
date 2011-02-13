@@ -44,11 +44,6 @@ Actions
    * /reset
    * `lun.sh --reset`
 
-To-Do for Alpha
----------------
-
- * Make sure no data is leaked through JSON calls
-
 To-Do for Beta
 --------------
 
