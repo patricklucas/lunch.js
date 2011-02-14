@@ -207,7 +207,7 @@ var unnominate = function(user, req, res) {
 }
 
 var reset = function(user, req, res) {
-    lunchdb.reset(function(err) {
+    lunchdb.reset(user, function(err) {
         var out = errOrOk(err);
 
         if (isJson(req))

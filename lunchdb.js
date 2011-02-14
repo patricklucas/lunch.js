@@ -23,7 +23,8 @@ var errors = {
     negative: 'Must be non-negative.',
     did_not_nominate: 'You didn\'t nominate that restaurant.',
     nomination_has_votes: 'Can\'t remove a nomination with votes.',
-    username_taken: 'That username is already in use.'
+    username_taken: 'That username is already in use.',
+    not_an_admin: 'Only admins can perform that action.'
 };
 
 var connected = function() {
@@ -451,16 +452,22 @@ lunchdb.unnominate = function(username, restaurant, callback) {
     });
 }
 
-lunchdb.reset = function(callback) {
+lunchdb.reset = function(username, callback) {
     if (!connected()) {
         callback(errors.not_connected);
         return;
     }
     
-    clearUserVotes(function() {
-        clearNominations(function() {
-            callback(null);
-        });
+    getUserByName(username, function(err, user) {
+        if (user.admin) {
+            clearUserVotes(function() {
+                clearNominations(function() {
+                    callback(null);
+                });
+            });
+        } else {
+            callback(errors.not_an_admin);
+        }
     });
 }
 
