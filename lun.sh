@@ -20,7 +20,7 @@ fi
 CURL="curl -k -s -X POST"
 
 # Setup complete, check if user has a token
-if [ -f $CONFIG_DIR/config ]
+if [ -f "$CONFIG_FILE" ]
 then
     HOST="https://$( head -n 1 $CONFIG_FILE )"
     TOKEN=$( tail -n 1 $CONFIG_FILE )
@@ -44,8 +44,6 @@ else
         
         if [ "$( echo $RESP | cut -c -6 )" = "Token:" ]
         then
-            rm -f "$CONFIG_FILE" 2> /dev/null
-
             touch "$CONFIG_FILE"
             chmod 0600 "$CONFIG_FILE"
 
