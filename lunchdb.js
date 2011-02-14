@@ -138,6 +138,8 @@ var collectVotes = function(callback) {
         }, function(err, mrCollection) {
             mrCollection.find(function(err, cursor) {
                 cursor.toArray(function(err, arr) {
+                    mrCollection.drop(function() {});
+
                     var votes = {};
                     
                     arr.forEach(function(mrResult) {
