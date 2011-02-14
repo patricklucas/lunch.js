@@ -14,7 +14,7 @@ Actions
 
  * Register
    * /register ?username
-   * `lun.sh -n <username> -s <server-with-port>
+   * `lun.sh -n <username> -s <server:port>
  * List nominations
    * /nominations
    * `lun.sh` (no parameters)

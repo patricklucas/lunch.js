@@ -25,7 +25,7 @@ then
     HOST="https://$( head -n 1 $CONFIG_FILE )"
     TOKEN=$( tail -n 1 $CONFIG_FILE )
 
-    if [ "$HOST" = "" -o "$TOKEN" = "" ]
+    if [ "x$HOST" = "x" -o "x$TOKEN" = "x" ]
     then
         echo "Config file $CONFIG_FILE malformed." 1>&2
         exit 1
@@ -44,7 +44,12 @@ else
         
         if [ "$( echo $RESP | cut -c -6 )" = "Token:" ]
         then
-            echo "$4" > "$CONFIG_FILE"
+            rm -f "$CONFIG_FILE" 2> /dev/null
+
+            touch "$CONFIG_FILE"
+            chmod 0600 "$CONFIG_FILE"
+
+            echo "$4" >> "$CONFIG_FILE"
             echo "$2" >> "$CONFIG_FILE"
             echo "$( echo $RESP | cut -c 8- )" >> "$CONFIG_FILE"
             echo "You are now registered!"
@@ -54,7 +59,7 @@ else
             exit 1
         fi
     else
-        echo "You must register with '$SCRIPT -n <username>'" 1>&2
+        echo "You must register with '$SCRIPT -n <username> -s <server:port>'" 1>&2
         exit 1
     fi
 fi
