@@ -4,7 +4,6 @@ SCRIPT=$( basename "$0" )
 
 CONFIG_DIR="$HOME/.lunch"
 CONFIG_FILE="$CONFIG_DIR/config"
-RESTAURANTS_FILE="$CONFIG_DIR/restaurants.bash"
 
 if [ "$1" = "-h" -a ! -n "$2" ]
 then
