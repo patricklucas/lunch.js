@@ -124,30 +124,18 @@ var setUserVote = function(name, vote, callback) {
 
 var collectVotes = function(callback) {
     db.collection('users', function(err, collection) {
-        collection.mapReduce(function() {
-            if (this.vote)
-                emit(this.vote, {users: [this]});
-        }, function(key, values) {
-            var users = [];
-            
-            values.forEach(function(doc) {
-                users = users.concat(doc.users);
-            });
-            
-            return {users: users};
-        }, function(err, mrCollection) {
-            mrCollection.find(function(err, cursor) {
-                cursor.toArray(function(err, arr) {
-                    mrCollection.drop(function() {});
+        collection.find(function(err, cursor) {
+            var votes = {}
 
-                    var votes = {};
-                    
-                    arr.forEach(function(mrResult) {
-                        votes[mrResult._id] = mrResult.value.users;
-                    });
-                    
+            cursor.each(function(err, user) {
+                if (user) {
+                    if (user.vote) {
+                        votes[user.vote] = votes[user.vote] || [];
+                        votes[user.vote].push(user);
+                    }
+                } else {
                     callback(null, votes);
-                });
+                }
             });
         });
     });
