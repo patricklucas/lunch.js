@@ -10,7 +10,11 @@ var pass = null;
 
 var lunchdb = exports;
 
-var db = new Db(dbname, new Server(host, port, {}));
+var db = new Db(dbname, new Server(host, port));
+
+var cache = {
+    nominations: []
+};
 
 var errors = {
     not_connected: 'Database not connected. Call lunchdb.connect().',
@@ -77,6 +81,48 @@ var getUserNominations = function(user, callback) {
                 } else {
                     callback(null, nominations);
                 }
+            });
+        });
+    });
+}
+
+/* Rebuild the nominations cache */
+var regenNominationsCache = function() {
+    collectVotes(function(err, votes) {
+        var nominations = {};
+        
+        for (var where in votes) {
+            nominations[where] = {
+                votes: votes[where]
+            };
+        }
+        
+        db.collection('nominations', function(err, collection) {
+            collection.find(function(err, cursor) {
+                cursor.each(function(err, nomination) {
+                    if (nomination) {
+                        var where = nomination.where;
+                        var user = nomination.user;
+                        
+                        nominations[where] = nominations[where] || {
+                            votes: []
+                        };
+                        
+                        nominations[where].user = user;
+                    } else {
+                        var nominationsArr = [];
+                        
+                        for (var n in nominations) {
+                            nominationsArr.push({
+                                where: n,
+                                user: nominations[n].user,
+                                votes: nominations[n].votes
+                            });
+                        }
+
+                        cache.nominations = nominationsArr;
+                    }
+                });
             });
         });
     });
@@ -355,44 +401,7 @@ lunchdb.nominations = function(callback) {
         return;
     }
 
-    collectVotes(function(err, votes) {
-        var nominations = {};
-        
-        for (var where in votes) {
-            nominations[where] = {
-                votes: votes[where]
-            };
-        }
-        
-        db.collection('nominations', function(err, collection) {
-            collection.find(function(err, cursor) {
-                cursor.each(function(err, nomination) {
-                    if (nomination) {
-                        var where = nomination.where;
-                        var user = nomination.user;
-                        
-                        nominations[where] = nominations[where] || {
-                            votes: []
-                        };
-                        
-                        nominations[where].user = user;
-                    } else {
-                        var nominationsArr = [];
-                        
-                        for (var n in nominations) {
-                            nominationsArr.push({
-                                where: n,
-                                user: nominations[n].user,
-                                votes: nominations[n].votes
-                            });
-                        }
-
-                        callback(null, nominationsArr);
-                    }
-                });
-            });
-        });
-    });
+    callback(null, cache.nominations);
 };
 
 lunchdb.nominate = function(username, restaurant, callback) {
@@ -409,6 +418,7 @@ lunchdb.nominate = function(username, restaurant, callback) {
             }
 
             addNomination(username, restaurant, function(err) {
+                regenNominationsCache();
                 callback(err);
             });
         });
@@ -433,6 +443,7 @@ lunchdb.unnominate = function(username, restaurant, callback) {
                 } else {
                     db.collection('nominations', function(err, collection) {
                         collection.remove({ _id: nomination._id }, function(err, collection) {
+                            regenNominationsCache();
                             callback(null, nomination.where || null);
                         });
                     });
@@ -452,6 +463,7 @@ lunchdb.reset = function(username, callback) {
         if (user.admin) {
             clearUserVotes(function() {
                 clearNominations(function() {
+                    regenNominationsCache();
                     callback(null);
                 });
             });
@@ -487,6 +499,7 @@ lunchdb.drive = function(username, seatsStr, callback) {
                 else {
                     doc.seats = seats;
                     collection.save(doc, function(err) {
+                        regenNominationsCache();
                         callback(null);
                     });
                 }
@@ -511,6 +524,7 @@ lunchdb.vote = function(username, restaurant, callback) {
                 if (err) {
                     callback(err, null);
                 } else {
+                    regenNominationsCache();
                     callback(null, {old: oldVote, new: vote});
                 }
             });
@@ -525,6 +539,7 @@ lunchdb.unvote = function(username, callback) {
     }
     
     setUserVote(username, null, function(err, oldVote) {
+        regenNominationsCache();
         callback(null, oldVote);
     });
 }
@@ -536,6 +551,7 @@ lunchdb.comment = function(username, comment, callback) {
     }
     
     setUserComment(username, comment, function(err, realComment) {
+        regenNominationsCache();
         callback(err, realComment);
     });
 }
