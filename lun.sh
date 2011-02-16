@@ -5,6 +5,7 @@ SCRIPT=$( basename "$0" )
 CONFIG_DIR="$HOME/.lunch"
 CONFIG_FILE="$CONFIG_DIR/config"
 RESTAURANTS_FILE="$CONFIG_DIR/restaurants.bash"
+UPDATE_URL="https://github.com/patricklucas/lunch.js/raw/master/lun.sh"
 
 if [ "$1" = "-h" -a ! -n "$2" ]
 then
@@ -36,6 +37,13 @@ then
     $SCRIPT -C
         Clear your user comment
 EOF
+    exit 0
+fi
+
+if [ "$1" = "--update" -a ! -n "$2" ]
+then
+    curl -s "$UPDATE_URL" > "$0"
+    echo "lun.sh updated successfully."
     exit 0
 fi
 
