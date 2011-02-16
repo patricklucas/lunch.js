@@ -39,39 +39,6 @@ EOF
     exit 0
 fi
 
-if [ "$1" = "-h" -a ! -n "$2" ]
-then
-    cat << EOF
-    $SCRIPT
-        List nominations and votes
-
-    $SCRIPT -n <username> -s <server:port>
-        Register
-
-    $SCRIPT -a <restaurant>
-        Nominate a restaurant
-
-    $SCRIPT -r <restaurant-prefix>
-        Remove a nomination
-
-    $SCRIPT <restaurant-prefix>
-        Vote for restaurant
-
-    $SCRIPT -u
-        Unvote
-
-    $SCRIPT -d <seats>
-        Mark yourself as a driver
-
-    $SCRIPT -c <comment>
-        Set your user comment
-
-    $SCRIPT -C
-        Clear your user comment
-EOF
-    exit 0
-fi
-
 if [ "$1" = "--update" -a ! -n "$2" ]
 then
     curl -s "$UPDATE_URL" > "$0"
